@@ -258,7 +258,6 @@ const start = () => {
 
     const wrapperMesh = new THREE.Object3D();
     wrapperMesh.add(uiMesh);
-    wrapperMesh.position.y = 1.5;
     wrapperMesh.visible = false;
 
     return wrapperMesh;
