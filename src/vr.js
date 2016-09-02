@@ -82,7 +82,7 @@ const start = () => {
   const material5 = new THREE.MeshLambertMaterial({
     color: 0xCCCCCC,
     shading: THREE.FlatShading,
-    side: THREE.DoubleSide,
+    // side: THREE.DoubleSide,
   });
 
   const sphereMesh = (() => {
@@ -215,21 +215,16 @@ const start = () => {
           const vb = vertices[face.b];
           const vc = vertices[face.c];
 
-          const originPoint = v => v.x === 0 && v.y === 0;
-          const vao = originPoint(va);
-          const vbo = originPoint(vb);
-          const vco = originPoint(vc);
-
-          positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (vao ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
-          positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (vao ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+          positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
           positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
 
-          positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (vbo ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
-          positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (vbo ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+          positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
           positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
 
-          positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (vco ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
-          positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (vco ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+          positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
           positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
 
           console.log('render', (i * (numSegments * 9)) + (j * 9) + 0);
@@ -241,7 +236,7 @@ const start = () => {
 
       return result;
     })();
-    const mesh = new THREE.Mesh(geometry, material2);
+    const mesh = new THREE.Mesh(geometry, material5);
     mesh.position.y = 1.5;
     mesh.position.z = -0.5;
     return mesh;
