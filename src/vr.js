@@ -143,6 +143,12 @@ const start = () => {
     mesh4.position.y = -(0.05 * 0.1);
     mesh4.rotation.x = -(Math.PI / 2) + 0.1;
     mesh.add(mesh4);
+
+    const rootGeometry = new THREE.Geometry();
+    rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+    const rootMesh = new THREE.Points(rootGeometry, material4);
+    mesh.add(rootMesh);
+    mesh.rootMesh = rootMesh;
     
     const tipGeometry = new THREE.Geometry();
     tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -183,7 +189,11 @@ const start = () => {
 
   const pointsMesh = (() => {
     const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, 0, 0]), 3));
+    geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
+    ]), 3));
     const mesh = new THREE.Points(geometry, material4);
     mesh.frustumCulled = false;
     return mesh;
@@ -387,6 +397,37 @@ const start = () => {
                 gunMesh.quaternion.y = quaternion.y;
                 gunMesh.quaternion.z = quaternion.z;
                 gunMesh.quaternion.w = quaternion.w;
+              })();
+
+              // update menu
+              (() => {
+                 const rootMatrixWorld = getMatrixWorld(swordMesh.rootMesh);
+                 const tipMatrixWorld = getMatrixWorld(swordMesh.tipMesh);
+                 const ray = new THREE.Vector3(
+                  tipMatrixWorld.position.x - rootMatrixWorld.position.x,
+                  tipMatrixWorld.position.y - rootMatrixWorld.position.y,
+                  tipMatrixWorld.position.z - rootMatrixWorld.position.z,
+                );
+                const controllerLine = new THREE.Line3(
+                  rootMatrixWorld.position.clone(),
+                  rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
+                );
+                const menuMatrixWorld = getMatrixWorld(menuMesh);
+                const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), menuMatrixWorld.position);
+                const intersectionPoint = menuPlane.intersectLine(controllerLine);
+
+                // XXX
+                if (intersectionPoint) {
+                  const positionAttribute = pointsMesh.geometry.getAttribute('position');
+                  const positionArray = positionAttribute.array;
+                  function setPosition(x, y, z) {
+                    positionArray[6] = x;
+                    positionArray[7] = y;
+                    positionArray[8] = z;
+                    positionAttribute.needsUpdate = true;
+                  }
+                  setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+                }
               })();
 
               // update rotating sphere
