@@ -110,23 +110,34 @@ const start = () => {
   const swordMesh = (() => {
     const mesh = new THREE.Object3D();
     
-    const geometry1 = new THREE.Geometry();
-    geometry1.vertices.push(new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -1 ));
+    const geometry1 = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9);
+    geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+    geometry1.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
+    geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.1 / 2), -(0.9 / 2)));
     const mesh1 = new THREE.Line(geometry1, material3);
     mesh.add(mesh1);
-    
-    const geometry2 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
-    geometry2.computeVertexNormals();
-    const mesh2 = new THREE.Mesh(geometry2, material2);
+
+    const geometry2 = new THREE.BufferGeometry(0.1, 1, 1, 9);
+    geometry2.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      0, 0, -0.9,
+      0, 0, -1.0,
+      0, -0.1, -0.9,
+    ]), 3));
+    const mesh2 = new THREE.Line(geometry2, material3);
     mesh.add(mesh2);
-   
-    const geometry3 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
+    
+    const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
     geometry3.computeVertexNormals();
-    const mesh3 = new THREE.Mesh(geometry3, material);
-    mesh3.position.z = -1;
-    mesh3.position.y = -(0.05 * 0.1);
-    mesh3.rotation.x = -(Math.PI / 2) + 0.1;
+    const mesh3 = new THREE.Mesh(geometry3, material2);
     mesh.add(mesh3);
+   
+    const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
+    geometry4.computeVertexNormals();
+    const mesh4 = new THREE.Mesh(geometry4, material);
+    mesh4.position.z = -1;
+    mesh4.position.y = -(0.05 * 0.1);
+    mesh4.rotation.x = -(Math.PI / 2) + 0.1;
+    mesh.add(mesh4);
     
     const tipGeometry = new THREE.Geometry();
     tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
