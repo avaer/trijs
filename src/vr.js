@@ -115,13 +115,31 @@ const start = () => {
   })();
   scene.add(sphereMesh);
 
-  const planeMesh = (() => {
+  const boxMesh = (() => {
+    const result = new THREE.Object3D();
+    result.position.y = 3;
+    result.position.z = -2;
+
+    const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    // geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
+
+    const mesh = new THREE.Mesh(geometry, material);
+    result.add(mesh);
+
+    const wireMesh = new THREE.Mesh(geometry, material2);
+    result.add(wireMesh);
+
+    return result;
+  })();
+  scene.add(boxMesh);
+
+  const gridMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(100, 100, 100, 100);
     const mesh = new THREE.Mesh(geometry, material2);
     mesh.rotation.x = Math.PI / 2;
     return mesh;
   })();
-  scene.add(planeMesh);
+  scene.add(gridMesh);
 
   const pointsMesh = (() => {
     const geometry = new THREE.BufferGeometry();
@@ -269,14 +287,13 @@ const start = () => {
               })();
               _setWeapon(weapon);
             }
-          } else {
+          } /* else {
             _setPosition(0, 0, 0);
-          }
+          } */
         };
       })(controller.update);
 
       controller.on('Gripped', e => {
-console.log('gripped', menuMesh);
         const position = new THREE.Vector3();
         const quaternion = new THREE.Quaternion();
         const scale = new THREE.Vector3();
@@ -639,6 +656,10 @@ console.log('gripped', menuMesh);
         .then(() => {
           console.log('-------------------------------------------------- present --------------------------------------------------------');
 
+          controllersMesh.controller0.on('PadUnpressed', e => {
+            boxPhysicsMesh.position.y = 10;
+            boxPhysicsMesh.__dirtyPosition = true;
+          });
           controllersMesh.controller1.on('PadUnpressed', e => {
             if (teleportMesh.visible) {
               positionOffset = teleportMesh.position.clone();
@@ -727,6 +748,69 @@ console.log('gripped', menuMesh);
     .catch(err => {
       console.warn(err);
     });
+
+  const physicsScene = new Physijs.Scene({
+    // fixedTimeStep: 1 / 60,
+    fixedTimeStep: 1 / 90, // XXX
+  });
+  // physicsScene.setGravity(0, -10, 0);
+
+  const _updatePhysics = () => {
+// console.log('on update');
+
+    boxMesh.position.x = boxPhysicsMesh.position.x;
+    boxMesh.position.y = boxPhysicsMesh.position.y;
+    boxMesh.position.z = boxPhysicsMesh.position.z;
+
+    boxMesh.quaternion.x = boxPhysicsMesh.quaternion.x;
+    boxMesh.quaternion.y = boxPhysicsMesh.quaternion.y;
+    boxMesh.quaternion.z = boxPhysicsMesh.quaternion.z;
+    boxMesh.quaternion.w = boxPhysicsMesh.quaternion.w;
+
+    _recursePhysics();
+  };
+  const _recursePhysics = () => {
+// console.log('simulate');
+    physicsScene.simulate();
+  };
+  physicsScene.addEventListener('update', _updatePhysics);
+
+  const floorPhysicsMesh = (() => {
+    const floorPhysicsGeometry = new THREE.PlaneGeometry(100, 100, 1, 1);
+    const floorPhysicsMaterial = Physijs.createMaterial(
+      material2,
+      1, // friction
+      0.1, // restitution
+    );
+
+    const physicsMesh = new Physijs.PlaneMesh(floorPhysicsGeometry, floorPhysicsMaterial, 0);
+    physicsMesh.rotation.x = Math.PI / 2;
+
+    return physicsMesh;
+  })();
+  physicsScene.add(floorPhysicsMesh);
+
+  const boxPhysicsMesh = (() => {
+    const boxPhysicsGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const boxPhysicsMaterial = Physijs.createMaterial(
+      material2,
+      1, // friction
+      0.1, // restitution
+    );
+    const physicsMesh = new Physijs.BoxMesh(boxPhysicsGeometry, boxPhysicsMaterial, 1);
+    physicsMesh.position.x = boxMesh.position.x;
+    physicsMesh.position.y = boxMesh.position.y;
+    physicsMesh.position.z = boxMesh.position.z;
+    physicsMesh.__dirtyPosition = true;
+
+    return physicsMesh;
+  })();
+  physicsScene.add(boxPhysicsMesh);
+
+window.boxMesh = boxMesh; // XXX
+window.boxPhysicsMesh = boxPhysicsMesh;
+
+  _recursePhysics();
 };
 
 start();
