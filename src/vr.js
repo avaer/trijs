@@ -243,10 +243,7 @@ const start = () => {
           positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
           positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
           positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
-
-          console.log('render', (i * (numSegments * 9)) + (j * 9) + 0);
         }
-        positions.e
       }
       result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       result.computeVertexNormals();
@@ -254,13 +251,26 @@ const start = () => {
       return result;
     })();
     const uiMesh = new THREE.Mesh(geometry, material5);
-    uiMesh.position.z = -1;
+    uiMesh.position.z = -1.5;
 
-    const wrapperMesh = new THREE.Object3D();
-    wrapperMesh.add(uiMesh);
-    wrapperMesh.visible = false;
+    const mesh = new THREE.Object3D();
+    mesh.add(uiMesh);
+    mesh.visible = false;
 
-    return wrapperMesh;
+    const rootGeometry = new THREE.Geometry();
+    rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+    const rootMesh = new THREE.Points(rootGeometry, material4);
+    uiMesh.add(rootMesh);
+    mesh.rootMesh = rootMesh;
+
+    const normalGeometry = new THREE.Geometry();
+    normalGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+    const normalMesh = new THREE.Points(normalGeometry, material4);
+    normalMesh.position.z = 1;
+    uiMesh.add(normalMesh);
+    mesh.normalMesh = normalMesh;
+
+    return mesh;
   })();
   scene.add(menuMesh);
 
@@ -381,11 +391,7 @@ const start = () => {
 
             const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
             const barrelMatrixWorld = getMatrixWorld(gunMesh.barrelMesh);
-            const ray = new THREE.Vector3(
-              barrelMatrixWorld.position.x - rootMatrixWorld.position.x,
-              barrelMatrixWorld.position.y - rootMatrixWorld.position.y,
-              barrelMatrixWorld.position.z - rootMatrixWorld.position.z,
-            );
+            const ray = barrelMatrixWorld.position.clone().sub(rootMatrixWorld.position);
 
             setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
 
@@ -469,17 +475,16 @@ const start = () => {
                 if (menuMesh.visible) {
                   const rootMatrixWorld = getMatrixWorld(swordMesh.rootMesh);
                   const tipMatrixWorld = getMatrixWorld(swordMesh.tipMesh);
-                  const ray = new THREE.Vector3(
-                    tipMatrixWorld.position.x - rootMatrixWorld.position.x,
-                    tipMatrixWorld.position.y - rootMatrixWorld.position.y,
-                    tipMatrixWorld.position.z - rootMatrixWorld.position.z,
-                  );
+                  const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                   const controllerLine = new THREE.Line3(
                     rootMatrixWorld.position.clone(),
                     rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
                   );
-                  const menuMatrixWorld = getMatrixWorld(menuMesh);
-                  const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), menuMatrixWorld.position);
+                  const menuRootMatrixWorld = getMatrixWorld(menuMesh.rootMesh);
+                  const menuNormalMatrixWorld = getMatrixWorld(menuMesh.normalMesh);
+                  const menuNormal = menuNormalMatrixWorld.position.clone().sub(menuRootMatrixWorld.position);
+                  const menuPosition = menuRootMatrixWorld.position;
+                  const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormal, menuPosition);
                   const intersectionPoint = menuPlane.intersectLine(controllerLine);
 
                   if (intersectionPoint) {
@@ -494,11 +499,7 @@ const start = () => {
               (() => {
                 const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
                 const tipMatrixWorld = getMatrixWorld(gunMesh.tipMesh);
-                const ray = new THREE.Vector3(
-                  tipMatrixWorld.position.x - rootMatrixWorld.position.x,
-                  tipMatrixWorld.position.y - rootMatrixWorld.position.y,
-                  tipMatrixWorld.position.z - rootMatrixWorld.position.z,
-                );
+                const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),
                   rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(15))
