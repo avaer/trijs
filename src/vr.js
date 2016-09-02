@@ -253,10 +253,15 @@ const start = () => {
 
       return result;
     })();
-    const mesh = new THREE.Mesh(geometry, material5);
-    mesh.position.y = 1.5;
-    mesh.position.z = -0.5;
-    return mesh;
+    const uiMesh = new THREE.Mesh(geometry, material5);
+    uiMesh.position.z = -1;
+
+    const wrapperMesh = new THREE.Object3D();
+    wrapperMesh.add(uiMesh);
+    wrapperMesh.position.y = 1.5;
+    wrapperMesh.visible = false;
+
+    return wrapperMesh;
   })();
   scene.add(menuMesh);
 
@@ -333,6 +338,19 @@ const start = () => {
             positionAttribute.needsUpdate = true;
           });
           controllersMesh.controller0.on('Gripped', e => {
+            const position = new THREE.Vector3();
+            const quaternion = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            camera.matrix.decompose(position, quaternion, scale);
+
+            menuMesh.position.x = position.x;
+            menuMesh.position.y = position.y;
+            menuMesh.position.z = position.z;
+            menuMesh.quaternion.x = quaternion.x;
+            menuMesh.quaternion.y = quaternion.y;
+            menuMesh.quaternion.z = quaternion.z;
+            menuMesh.quaternion.w = quaternion.w;
+
             menuMesh.visible = true;
           });
           controllersMesh.controller0.on('Ungripped', e => {
@@ -409,6 +427,7 @@ const start = () => {
               camera.position.x += positionOffset.x;
               camera.position.y += positionOffset.y;
               camera.position.z += positionOffset.z;
+              camera.updateMatrix();
               [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
                 controller.update(positionOffset); // XXX update(positionOffset) support was hacked in
               });
