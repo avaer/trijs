@@ -59,6 +59,13 @@ const start = () => {
       scale,
     };
   }
+  function _colorHexToFloatArray(colorHex) {
+    return [
+      ((colorHex >> 16) & 0xFF) / 0xFF,
+      ((colorHex >> 8) & 0xFF) / 0xFF,
+      ((colorHex >> 0) & 0xFF) / 0xFF,
+    ];
+  }
 
   const scene = new THREE.Scene();
 
@@ -82,7 +89,7 @@ const start = () => {
   const material5 = new THREE.MeshLambertMaterial({
     color: 0xCCCCCC,
     shading: THREE.FlatShading,
-    // side: THREE.DoubleSide,
+    vertexColors: THREE.VertexColors,
   });
 
   const sphereMesh = (() => {
@@ -209,53 +216,112 @@ const start = () => {
 
   const menuMesh = (() => {
     const numSlices = 3;
-    const geometry = (() => {
-      const result = new THREE.BufferGeometry();
-
-      const radius = 0.5;
-      const innerRadius = 0.2;
-      // const innerDistance = innerRadius / Math.sqrt(Math.pow(innerRadius, 2) + Math.pow(innerRadius, 2));
-      const numSegments = 3;
-      const numTriangles = numSlices * numSegments * 3 * 3;
-
-      const positions = new Float32Array(numTriangles);
-      for (let i = 0; i < numSlices; i++) {
-        const thetaLength = 1 / numSlices;
-        // const thetaLengthHalf = thetaLength / 2;
-        const thetaStart = (1 / 12) + (i / numSlices);
-        // const thetaMidpoint = thetaStart + thetaLengthHalf;
-        const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
-        const {vertices, faces} = planeGeometry;
-        for (let j = 0; j < numSegments; j++) {
-          const face = faces[j];
-          const va = vertices[face.a];
-          const vb = vertices[face.b];
-          const vc = vertices[face.c];
-
-          positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
-
-          positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
-
-          positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-          positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
-        }
-      }
-      result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-      result.computeVertexNormals();
-
-      return result;
-    })();
-    const uiMesh = new THREE.Mesh(geometry, material5);
-    uiMesh.position.z = -1.5;
+    const radius = 0.5;
+    const innerRadius = 0.2;
 
     const mesh = new THREE.Object3D();
-    mesh.add(uiMesh);
     mesh.visible = false;
+    mesh.numSlices = numSlices;
+    mesh.radius = radius;
+    mesh.innerRadius = innerRadius;
+
+    const uiMesh = (() => {
+      const geometry = (() => {
+        const result = new THREE.BufferGeometry();
+
+        // const innerDistance = innerRadius / Math.sqrt(Math.pow(innerRadius, 2) + Math.pow(innerRadius, 2));
+        const numSegments = 3;
+        const numTriangles = numSlices * numSegments * 3;
+
+        const positions = new Float32Array(numTriangles * 3);
+        for (let i = 0; i < numSlices; i++) {
+          const thetaLength = 1 / numSlices;
+          // const thetaLengthHalf = thetaLength / 2;
+          const thetaStart = (1 / 12) + (i / numSlices);
+          // const thetaMidpoint = thetaStart + thetaLengthHalf;
+          const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
+          const {vertices, faces} = planeGeometry;
+          for (let j = 0; j < numSegments; j++) {
+            const face = faces[j];
+            const va = vertices[face.a];
+            const vb = vertices[face.b];
+            const vc = vertices[face.c];
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
+          }
+        }
+        result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        result.computeVertexNormals();
+
+        const colors = new Float32Array(numTriangles * 3);
+        for (let i = 0; i < numTriangles; i++) {
+          colors[(i * 3) + 0] = 0x80 / 0xFF;
+          colors[(i * 3) + 1] = 0x80 / 0xFF;
+          colors[(i * 3) + 2] = 0x80 / 0xFF;
+        }
+        result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        result.setSliceColor = (sliceIndex, colorHex) => {
+          const colorsAttribute = result.getAttribute('color');
+          const colors = colorsAttribute.array;
+
+          for (let i = 0; i < numTriangles; i++) {
+            colors[(i * 3) + 0] = 0x80 / 0xFF;
+            colors[(i * 3) + 1] = 0x80 / 0xFF;
+            colors[(i * 3) + 2] = 0x80 / 0xFF;
+          }
+
+          const colorFloatArray = _colorHexToFloatArray(colorHex);
+          for (let i = 0; i < numSegments; i++) {
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 0] = colorFloatArray[0];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 1] = colorFloatArray[1];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 2] = colorFloatArray[2];
+
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 3] = colorFloatArray[0];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 4] = colorFloatArray[1];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 5] = colorFloatArray[2];
+
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 6] = colorFloatArray[0];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 7] = colorFloatArray[1];
+            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 8] = colorFloatArray[2];
+          }
+
+          colorsAttribute.needsUpdate = true;
+        };
+
+        return result;
+      })();
+      const mesh = new THREE.Mesh(geometry, material5);
+      mesh.position.z = -1.5;
+      return mesh;
+    })();
+    mesh.add(uiMesh);
+    mesh.uiMesh = uiMesh;
+
+    const centersGeometry = (() => {
+      const result = new THREE.Geometry();
+      for (let i = 0; i < numSlices; i++) {
+        const absoluteCenter = new THREE.Vector3(
+          -Math.sin((i / numSlices) * (Math.PI * 2)),
+          Math.cos((i / numSlices) * (Math.PI * 2)),
+          0
+        ).multiplyScalar(innerRadius);
+        result.vertices.push(absoluteCenter);
+      }
+      return result;
+    })();
+    const centersMesh = new THREE.Points(centersGeometry, material4);
+    uiMesh.add(centersMesh);
 
     const rootGeometry = new THREE.Geometry();
     rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -282,6 +348,9 @@ const start = () => {
     return mesh;
   })();
   scene.add(teleportMesh);
+
+  const light = new THREE.AmbientLight(0x404040);
+  scene.add(light);
 
   const light2 = new THREE.DirectionalLight(0xFFFFFF, 1);
   light2.position.set(-10, 10, 10);
@@ -489,6 +558,34 @@ const start = () => {
 
                   if (intersectionPoint) {
                     setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+
+                    const sliceCenters = (() => {
+                      const {numSlices, innerRadius} = menuMesh;
+                      const result = Array(numSlices);
+                      for (let i = 0; i < numSlices; i++) {
+                        const absoluteCenter = new THREE.Vector3(
+                          -Math.sin((i / numSlices) * (Math.PI * 2)),
+                          Math.cos((i / numSlices) * (Math.PI * 2)),
+                          0
+                        ).multiplyScalar(innerRadius);
+                        const relativeCenter = absoluteCenter.clone().applyMatrix4(menuMesh.rootMesh.matrixWorld);
+                        result[i] = relativeCenter;
+                      }
+                      return result;
+                    })();
+                    const sliceDistanceSpecs = sliceCenters.map((center, i) => {
+                      const distance = intersectionPoint.distanceTo(center);
+                      return {
+                        center,
+                        index: i,
+                        distance,
+                      };
+                    });
+                    const sortedSliceDistanceSpecs = sliceDistanceSpecs.sort((a, b) => a.distance - b.distance);
+                    const shortestSliceDistanceSpec = sortedSliceDistanceSpecs[0];
+                    const shortestSliceDistanceIndex = shortestSliceDistanceSpec.index;
+                    
+                    menuMesh.uiMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
                   }
                 } else {
                   setPosition(0, 0, 0);
