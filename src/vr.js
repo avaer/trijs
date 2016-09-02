@@ -79,6 +79,11 @@ const start = () => {
     color: 0x333333,
     size: 0.025,
   });
+  const material5 = new THREE.MeshLambertMaterial({
+    color: 0xCCCCCC,
+    shading: THREE.FlatShading,
+    side: THREE.DoubleSide,
+  });
 
   const sphereMesh = (() => {
     const result = new THREE.Object3D();
@@ -176,20 +181,72 @@ const start = () => {
   })();
   scene.add(gunMesh);
 
-  /* const staticPointGeometry = new THREE.Geometry();
-  staticPointGeometry.vertices.push(new THREE.Vector3( 0, 0.5, 0 ));
-  const staticPointsMesh = new THREE.Points(staticPointGeometry, material4);
-  scene.add(staticPointsMesh); */
-
   const pointsMesh = (() => {
     const geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, 0, 0]), 3));
-    const material = material4;
     const mesh = new THREE.Points(geometry, material4);
     mesh.frustumCulled = false;
     return mesh;
   })();
   scene.add(pointsMesh);
+
+  const menuMesh = (() => {
+    const numSlices = 3;
+    const geometry = (() => {
+      const result = new THREE.BufferGeometry();
+
+      const radius = 0.5;
+      const innerRadius = 0.2;
+      // const innerDistance = innerRadius / Math.sqrt(Math.pow(innerRadius, 2) + Math.pow(innerRadius, 2));
+      const numSegments = 3;
+      const numTriangles = numSlices * numSegments * 3 * 3;
+
+      const positions = new Float32Array(numTriangles);
+      for (let i = 0; i < numSlices; i++) {
+        const thetaLength = 1 / numSlices;
+        // const thetaLengthHalf = thetaLength / 2;
+        const thetaStart = (1 / 12) + (i / numSlices);
+        // const thetaMidpoint = thetaStart + thetaLengthHalf;
+        const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
+        const {vertices, faces} = planeGeometry;
+        for (let j = 0; j < numSegments; j++) {
+          const face = faces[j];
+          const va = vertices[face.a];
+          const vb = vertices[face.b];
+          const vc = vertices[face.c];
+
+          const originPoint = v => v.x === 0 && v.y === 0;
+          const vao = originPoint(va);
+          const vbo = originPoint(vb);
+          const vco = originPoint(vc);
+
+          positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (vao ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (vao ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
+
+          positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (vbo ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (vbo ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
+
+          positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (vco ? (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (vco ? (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2))) : 0);
+          positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
+
+          console.log('render', (i * (numSegments * 9)) + (j * 9) + 0);
+        }
+        positions.e
+      }
+      result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      result.computeVertexNormals();
+
+      return result;
+    })();
+    const mesh = new THREE.Mesh(geometry, material2);
+    mesh.position.y = 1.5;
+    mesh.position.z = -0.5;
+    return mesh;
+  })();
+  scene.add(menuMesh);
 
   const light2 = new THREE.DirectionalLight(0xFFFFFF, 1);
   light2.position.set(-10, 10, 10);
@@ -246,6 +303,11 @@ const start = () => {
             positionArray[2] = position.z;
             positionAttribute.needsUpdate = true;
           });
+          controller0.on('Gripped', e => {
+            console.log('gripped');
+
+            menuMesh.visible = !menuMesh.visible;
+          });
           let shootFrame = null;
           controller1.on('TriggerClicked', e => {
             const positionAttribute = pointsMesh.geometry.getAttribute('position');
@@ -275,7 +337,7 @@ const start = () => {
 
             setPosition(tipMatrixWorld.position.x, tipMatrixWorld.position.y, tipMatrixWorld.position.z);
 
-            function recurseShoot() {
+            function recurseBullet() {
               const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
                 if (localShootFrame === shootFrame) {
                   const oldPosition = getPosition();
@@ -286,11 +348,11 @@ const start = () => {
                     oldPosition.z + (ray.z * speed)
                   );
 
-                  recurseShoot();
+                  recurseBullet();
                 }
               });
             }
-            recurseShoot();
+            recurseBullet();
           });
 
           var stats = new Stats();
