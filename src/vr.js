@@ -119,88 +119,6 @@ const start = () => {
   })();
   scene.add(planeMesh);
 
-  const swordMesh = (() => {
-    const mesh = new THREE.Object3D();
-
-    const geometry1 = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9);
-    geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-    geometry1.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
-    geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.1 / 2), -(0.9 / 2)));
-    const mesh1 = new THREE.Line(geometry1, material3);
-    mesh.add(mesh1);
-
-    const geometry2 = new THREE.BufferGeometry(0.1, 1, 1, 9);
-    geometry2.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
-      0, 0, -0.9,
-      0, 0, -1.0,
-      0, -0.1, -0.9,
-    ]), 3));
-    const mesh2 = new THREE.Line(geometry2, material3);
-    mesh.add(mesh2);
-
-    const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
-    geometry3.computeVertexNormals();
-    const mesh3 = new THREE.Mesh(geometry3, material2);
-    mesh.add(mesh3);
-
-    const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
-    geometry4.computeVertexNormals();
-    const mesh4 = new THREE.Mesh(geometry4, material);
-    mesh4.position.z = -1;
-    mesh4.position.y = -(0.05 * 0.1);
-    mesh4.rotation.x = -(Math.PI / 2) + 0.1;
-    mesh.add(mesh4);
-
-    const rootGeometry = new THREE.Geometry();
-    rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const rootMesh = new THREE.Points(rootGeometry, material4);
-    mesh.add(rootMesh);
-    mesh.rootMesh = rootMesh;
-
-    const tipGeometry = new THREE.Geometry();
-    tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const tipMesh = new THREE.Points(tipGeometry, material4);
-    tipMesh.position.z = -1;
-    mesh1.add(tipMesh);
-    mesh.tipMesh = tipMesh;
-
-    return mesh;
-  })();
-  scene.add(swordMesh);
-
-  const gunMesh = (() => {
-    const mesh = new THREE.Object3D();
-
-    const geometry1 = new THREE.Geometry();
-    geometry1.vertices.push(new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -0.2 ));
-    const mesh1 = new THREE.Line(geometry1, material3);
-    mesh1.rotation.x = -(Math.PI * 0.3);
-    mesh.add(mesh1);
-
-    const rootGeometry = new THREE.Geometry();
-    rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const rootMesh = new THREE.Points(rootGeometry, material4);
-    mesh.add(rootMesh);
-    mesh.rootMesh = rootMesh;
-
-    const tipGeometry = new THREE.Geometry();
-    tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const tipMesh = new THREE.Points(tipGeometry, material4);
-    tipMesh.position.z = -1;
-    mesh.add(tipMesh);
-    mesh.tipMesh = tipMesh;
-
-    const barrelGeometry = new THREE.Geometry();
-    barrelGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const barrelMesh = new THREE.Points(barrelGeometry, material4);
-    barrelMesh.position.z = -0.2;
-    mesh1.add(barrelMesh);
-    mesh.barrelMesh = barrelMesh;
-
-    return mesh;
-  })();
-  scene.add(gunMesh);
-
   const pointsMesh = (() => {
     const geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
@@ -213,139 +131,6 @@ const start = () => {
     return mesh;
   })();
   scene.add(pointsMesh);
-
-  const menuMesh = (() => {
-    const numSlices = 3;
-    const radius = 0.5;
-    const innerRadius = 0.2;
-
-    const mesh = new THREE.Object3D();
-    mesh.visible = false;
-    mesh.numSlices = numSlices;
-    mesh.radius = radius;
-    mesh.innerRadius = innerRadius;
-
-    const uiMesh = (() => {
-      const mesh = new THREE.Object3D();
-      mesh.position.z = -1.5;
-
-      const geometry = (() => {
-        const result = new THREE.BufferGeometry();
-
-        // const innerDistance = innerRadius / Math.sqrt(Math.pow(innerRadius, 2) + Math.pow(innerRadius, 2));
-        const numSegments = 3;
-        const numTriangles = numSlices * numSegments * 3;
-
-        const positions = new Float32Array(numTriangles * 3);
-        for (let i = 0; i < numSlices; i++) {
-          const thetaLength = 1 / numSlices;
-          const thetaStart = (1 / 12) + (i / numSlices);
-          const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
-          const {vertices, faces} = planeGeometry;
-          for (let j = 0; j < numSegments; j++) {
-            const face = faces[j];
-            const va = vertices[face.a];
-            const vb = vertices[face.b];
-            const vc = vertices[face.c];
-
-            positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
-
-            positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
-
-            positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
-            positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
-          }
-        }
-        result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        result.computeVertexNormals();
-
-        const colors = new Float32Array(numTriangles * 3);
-        for (let i = 0; i < numTriangles; i++) {
-          colors[(i * 3) + 0] = 1;
-          colors[(i * 3) + 1] = 1;
-          colors[(i * 3) + 2] = 1;
-        }
-        result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        result.setSliceColor = (sliceIndex, colorHex) => {
-          const colorsAttribute = result.getAttribute('color');
-          const colors = colorsAttribute.array;
-
-          for (let i = 0; i < numTriangles; i++) {
-            colors[(i * 3) + 0] = 1;
-            colors[(i * 3) + 1] = 1;
-            colors[(i * 3) + 2] = 1;
-          }
-
-          const colorFloatArray = _colorHexToFloatArray(colorHex);
-          for (let i = 0; i < numSegments; i++) {
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 0] = colorFloatArray[0];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 1] = colorFloatArray[1];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 2] = colorFloatArray[2];
-
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 3] = colorFloatArray[0];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 4] = colorFloatArray[1];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 5] = colorFloatArray[2];
-
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 6] = colorFloatArray[0];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 7] = colorFloatArray[1];
-            colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 8] = colorFloatArray[2];
-          }
-
-          colorsAttribute.needsUpdate = true;
-        };
-
-        return result;
-      })();
-
-      const solidMesh = new THREE.Mesh(geometry, material5);
-      mesh.add(solidMesh);
-      mesh.solidMesh = solidMesh;
-
-      const wireframeMesh = new THREE.Mesh(geometry, material2);
-      mesh.add(wireframeMesh);
-
-      return mesh;
-    })();
-    mesh.add(uiMesh);
-    mesh.uiMesh = uiMesh;
-
-    const centersGeometry = (() => {
-      const result = new THREE.Geometry();
-      for (let i = 0; i < numSlices; i++) {
-        const absoluteCenter = new THREE.Vector3(
-          -Math.sin((i / numSlices) * (Math.PI * 2)),
-          Math.cos((i / numSlices) * (Math.PI * 2)),
-          0
-        ).multiplyScalar(innerRadius);
-        result.vertices.push(absoluteCenter);
-      }
-      return result;
-    })();
-    const centersMesh = new THREE.Points(centersGeometry, material4);
-    uiMesh.add(centersMesh);
-
-    const rootGeometry = new THREE.Geometry();
-    rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const rootMesh = new THREE.Points(rootGeometry, material4);
-    uiMesh.add(rootMesh);
-    mesh.rootMesh = rootMesh;
-
-    const normalGeometry = new THREE.Geometry();
-    normalGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-    const normalMesh = new THREE.Points(normalGeometry, material4);
-    normalMesh.position.z = 1;
-    uiMesh.add(normalMesh);
-    mesh.normalMesh = normalMesh;
-
-    return mesh;
-  })();
-  scene.add(menuMesh);
 
   const teleportMesh = (() => {
     const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
@@ -381,11 +166,416 @@ const start = () => {
   const controllersMesh = (() => {
     const result = new THREE.Object3D();
 
-    const controller0 = new ViveController(0, controls);
+    let shootFrame = null;
+    const _makeController = id => {
+      const result = new ViveController(0, controls);
+
+      const menuMesh = _makeMenuMesh();
+      result.menuMesh = menuMesh;
+
+      const weaponMeshes = {};
+      result.weaponMeshes = weaponMeshes;
+      _makeWeaponMeshes().forEach(weaponMesh => {
+         const {name, mesh} = weaponMesh;
+         result.add(mesh);
+         result.weaponMeshes[name] = mesh;
+      });
+      result.weapon = null;
+
+      // update menu targeting
+      result.update = (oldUpdate => {
+        return ({positionOffset}) => {
+          oldUpdate({positionOffset});
+
+          const positionAttribute = pointsMesh.geometry.getAttribute('position');
+          const positionArray = positionAttribute.array;
+          const _setPosition = (x, y, z) => {
+            positionArray[6] = x;
+            positionArray[7] = y;
+            positionArray[8] = z;
+            positionAttribute.needsUpdate = true;
+          };
+
+          if (menuMesh.visible) {
+            const rootMatrixWorld = getMatrixWorld(weaponMeshes.sword.rootMesh);
+            const tipMatrixWorld = getMatrixWorld(weaponMeshes.sword.tipMesh);
+            const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
+            const controllerLine = new THREE.Line3(
+              rootMatrixWorld.position.clone(),
+              rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
+            );
+            const menuRootMatrixWorld = getMatrixWorld(menuMesh.rootMesh);
+            const menuNormalMatrixWorld = getMatrixWorld(menuMesh.normalMesh);
+            const menuNormal = menuNormalMatrixWorld.position.clone().sub(menuRootMatrixWorld.position);
+            const menuPosition = menuRootMatrixWorld.position;
+            const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormal, menuPosition);
+            const intersectionPoint = menuPlane.intersectLine(controllerLine);
+
+            if (intersectionPoint) {
+              _setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+
+              const sliceCenters = (() => {
+                const {numSlices, innerRadius} = menuMesh;
+                const result = Array(numSlices);
+                for (let i = 0; i < numSlices; i++) {
+                  const absoluteCenter = new THREE.Vector3(
+                    -Math.sin((i / numSlices) * (Math.PI * 2)),
+                    Math.cos((i / numSlices) * (Math.PI * 2)),
+                    0
+                  ).multiplyScalar(innerRadius);
+                  const relativeCenter = absoluteCenter.clone().applyMatrix4(menuMesh.rootMesh.matrixWorld);
+                  result[i] = relativeCenter;
+                }
+                return result;
+              })();
+              const sliceDistanceSpecs = sliceCenters.map((center, i) => {
+                const distance = intersectionPoint.distanceTo(center);
+                return {
+                  center,
+                  index: i,
+                  distance,
+                };
+              });
+              const sortedSliceDistanceSpecs = sliceDistanceSpecs.sort((a, b) => a.distance - b.distance);
+              const shortestSliceDistanceSpec = sortedSliceDistanceSpecs[0];
+              const shortestSliceDistanceIndex = shortestSliceDistanceSpec.index;
+              
+              menuMesh.uiMesh.solidMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
+            }
+          } else {
+            _setPosition(0, 0, 0);
+          }
+        };
+      })(result.update);
+
+      result.on('Gripped', e => {
+        const position = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
+        camera.matrix.decompose(position, quaternion, scale);
+
+        menuMesh.position.x = position.x;
+        menuMesh.position.y = position.y;
+        menuMesh.position.z = position.z;
+        menuMesh.quaternion.x = quaternion.x;
+        menuMesh.quaternion.y = quaternion.y;
+        menuMesh.quaternion.z = quaternion.z;
+        menuMesh.quaternion.w = quaternion.w;
+
+        menuMesh.visible = true;
+      });
+      result.on('Ungripped', e => {
+        menuMesh.visible = false;
+      });
+
+      result.on('TriggerClicked', e => {
+        if (result.weapon === 'sword') {
+          const {position, quaternion, scale} = getMatrixWorld(weaponMeshes.sword.tipMesh);
+
+          const positionAttribute = pointsMesh.geometry.getAttribute('position');
+          const positionArray = positionAttribute.array;
+          positionArray[0] = position.x;
+          positionArray[1] = position.y;
+          positionArray[2] = position.z;
+          positionAttribute.needsUpdate = true;
+        } else if (result.weapon === 'gun') {
+          const positionAttribute = pointsMesh.geometry.getAttribute('position');
+          const positionArray = positionAttribute.array;
+
+          const _getPosition = (x, y, z) => {
+            return new THREE.Vector3(
+              positionArray[3],
+              positionArray[4],
+              positionArray[5]
+            );
+          };
+          const _setPosition = (x, y, z) => {
+            positionArray[3] = x;
+            positionArray[4] = y;
+            positionArray[5] = z;
+            positionAttribute.needsUpdate = true;
+          };
+
+          const rootMatrixWorld = getMatrixWorld(weaponMeshes.gun.rootMesh);
+          const barrelMatrixWorld = getMatrixWorld(weaponMeshes.gun.barrelMesh);
+          const ray = barrelMatrixWorld.position.clone().sub(rootMatrixWorld.position);
+
+          _setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
+
+          const _recurseBullet = () => {
+            const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
+              if (localShootFrame === shootFrame) {
+                const oldPosition = _getPosition();
+                const speed = 0.5;
+                _setPosition(
+                  oldPosition.x + (ray.x * speed),
+                  oldPosition.y + (ray.y * speed),
+                  oldPosition.z + (ray.z * speed)
+                );
+
+                _recurseBullet();
+              }
+            });
+          };
+          _recurseBullet();
+        }
+      });
+
+      return result;
+    };
+
+    const _makeWeaponMeshes = (() => {
+      const _makeSwordMesh = (() => {
+        const geometry1 = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9);
+        geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+        geometry1.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
+        geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.1 / 2), -(0.9 / 2)));
+
+        const geometry2 = new THREE.BufferGeometry(0.1, 1, 1, 9);
+        geometry2.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          0, 0, -0.9,
+          0, 0, -1.0,
+          0, -0.1, -0.9,
+        ]), 3));
+
+        const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
+        geometry3.computeVertexNormals();
+
+        const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
+        geometry4.computeVertexNormals();
+
+        const rootGeometry = new THREE.Geometry();
+        rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+        const rootMesh = new THREE.Points(rootGeometry, material4);
+        mesh.add(rootMesh);
+        mesh.rootMesh = rootMesh;
+
+        const tipGeometry = new THREE.Geometry();
+        tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+        return () => {
+          const mesh = new THREE.Object3D();
+          mesh.visible = false;
+
+          const mesh1 = new THREE.Line(geometry1, material3);
+          mesh.add(mesh1);
+
+          const mesh2 = new THREE.Line(geometry2, material3);
+          mesh.add(mesh2);
+
+          const mesh3 = new THREE.Mesh(geometry3, material2);
+          mesh.add(mesh3);
+
+          const mesh4 = new THREE.Mesh(geometry4, material);
+          mesh4.position.z = -1;
+          mesh4.position.y = -(0.05 * 0.1);
+          mesh4.rotation.x = -(Math.PI / 2) + 0.1;
+          mesh.add(mesh4);
+
+          const tipMesh = new THREE.Points(tipGeometry, material4);
+          tipMesh.position.z = -1;
+          mesh1.add(tipMesh);
+          mesh.tipMesh = tipMesh;
+
+          return mesh;
+        };
+      })();
+
+      const _makeGunMesh = (() => {
+        const geometry1 = new THREE.Geometry();
+        geometry1.vertices.push(new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -0.2 ));
+
+        const barrelGeometry = new THREE.Geometry();
+        barrelGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+        const rootGeometry = new THREE.Geometry();
+        rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+        const tipGeometry = new THREE.Geometry();
+        tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+        return () => {
+          const mesh = new THREE.Object3D();
+          mesh.visible = false;
+
+          const mesh1 = new THREE.Line(geometry1, material3);
+          mesh1.rotation.x = -(Math.PI * 0.3);
+          mesh.add(mesh1);
+
+          const barrelMesh = new THREE.Points(barrelGeometry, material4);
+          barrelMesh.position.z = -0.2;
+          mesh1.add(barrelMesh);
+          mesh.barrelMesh = barrelMesh;
+
+          const rootMesh = new THREE.Points(rootGeometry, material4);
+          mesh.add(rootMesh);
+          mesh.rootMesh = rootMesh;
+
+          const tipMesh = new THREE.Points(tipGeometry, material4);
+          tipMesh.position.z = -1;
+          mesh.add(tipMesh);
+          mesh.tipMesh = tipMesh;
+
+          return mesh;
+        }
+      })();
+
+      return () => {
+        const swordMesh = _makeSwordMesh();
+        const gunMesh = _makeGunMesh();
+
+        return {
+          sword: swordMesh,
+          gun: gunMesh,
+        };
+      };
+    })();
+
+    const _makeMenuMesh = (() => {
+      const numSlices = 3;
+      const radius = 0.5;
+      const innerRadius = 0.2;
+
+      const _makeUiGeometry = ({colored = false} = {}) => {
+        const result = new THREE.BufferGeometry();
+
+        const numSegments = 3;
+        const numTriangles = numSlices * numSegments * 3;
+
+        const positions = new Float32Array(numTriangles * 3);
+        for (let i = 0; i < numSlices; i++) {
+          const thetaLength = 1 / numSlices;
+          const thetaStart = (1 / 12) + (i / numSlices);
+          const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
+          const {vertices, faces} = planeGeometry;
+          for (let j = 0; j < numSegments; j++) {
+            const face = faces[j];
+            const va = vertices[face.a];
+            const vb = vertices[face.b];
+            const vc = vertices[face.c];
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 0] = va.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 1] = va.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 2] = va.z;
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 3] = vb.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 4] = vb.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 5] = vb.z;
+
+            positions[(i * (numSegments * 9)) + (j * 9) + 6] = vc.x - (innerRadius * Math.sin((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 7] = vc.y + (innerRadius * Math.cos((i / numSlices) * (Math.PI * 2)));
+            positions[(i * (numSegments * 9)) + (j * 9) + 8] = vc.z;
+          }
+        }
+        result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        result.computeVertexNormals();
+
+        if (colored) {
+          const colors = new Float32Array(numTriangles * 3);
+          for (let i = 0; i < numTriangles; i++) {
+            colors[(i * 3) + 0] = 1;
+            colors[(i * 3) + 1] = 1;
+            colors[(i * 3) + 2] = 1;
+          }
+          result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+          result.setSliceColor = (sliceIndex, colorHex) => {
+            const colorsAttribute = result.getAttribute('color');
+            const colors = colorsAttribute.array;
+
+            for (let i = 0; i < numTriangles; i++) {
+              colors[(i * 3) + 0] = 1;
+              colors[(i * 3) + 1] = 1;
+              colors[(i * 3) + 2] = 1;
+            }
+
+            const colorFloatArray = _colorHexToFloatArray(colorHex);
+            for (let i = 0; i < numSegments; i++) {
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 0] = colorFloatArray[0];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 1] = colorFloatArray[1];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 2] = colorFloatArray[2];
+
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 3] = colorFloatArray[0];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 4] = colorFloatArray[1];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 5] = colorFloatArray[2];
+
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 6] = colorFloatArray[0];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 7] = colorFloatArray[1];
+              colors[(sliceIndex * (numSegments * 9)) + (i * 9) + 8] = colorFloatArray[2];
+            }
+
+            colorsAttribute.needsUpdate = true;
+          };
+        }
+
+        return result;
+      };
+
+      const centersGeometry = (() => {
+        const result = new THREE.Geometry();
+        for (let i = 0; i < numSlices; i++) {
+          const absoluteCenter = new THREE.Vector3(
+            -Math.sin((i / numSlices) * (Math.PI * 2)),
+            Math.cos((i / numSlices) * (Math.PI * 2)),
+            0
+          ).multiplyScalar(innerRadius);
+          result.vertices.push(absoluteCenter);
+        }
+        return result;
+      })();
+
+      const rootGeometry = new THREE.Geometry();
+      rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+      const normalGeometry = new THREE.Geometry();
+      normalGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+      return () => {
+        const mesh = new THREE.Object3D();
+        mesh.visible = false;
+        mesh.numSlices = numSlices;
+        mesh.radius = radius;
+        mesh.innerRadius = innerRadius;
+
+        const uiMesh = (() => {
+          const mesh = new THREE.Object3D();
+          mesh.position.z = -1.5;
+
+          const solidUiGeometry = _makeUiGeometry({colored: true});
+          const solidMesh = new THREE.Mesh(solidUiGeometry, material5);
+          mesh.add(solidMesh);
+          mesh.solidMesh = solidMesh;
+
+          const wireframeUiGeometry = _makeUiGeometry();
+          const wireframeMesh = new THREE.Mesh(wireframeUiGeometry, material2);
+          mesh.add(wireframeMesh);
+
+          return mesh;
+        })();
+        mesh.add(uiMesh);
+        mesh.uiMesh = uiMesh;
+
+        const centersMesh = new THREE.Points(centersGeometry, material4);
+        uiMesh.add(centersMesh);
+
+        const rootMesh = new THREE.Points(rootGeometry, material4);
+        uiMesh.add(rootMesh);
+        mesh.rootMesh = rootMesh;
+
+        const normalMesh = new THREE.Points(normalGeometry, material4);
+        normalMesh.position.z = 1;
+        uiMesh.add(normalMesh);
+        mesh.normalMesh = normalMesh;
+
+        return mesh;
+      };
+    })();
+
+    const controller0 = _makeController(0);
     scene.add(controller0);
     result.controller0 = controller0;
 
-    const controller1 = new ViveController(1, controls);
+    const controller1 = _makeController(1);
     scene.add(controller1);
     result.controller1 = controller1;
 
@@ -412,81 +602,10 @@ const start = () => {
         .then(() => {
           console.log('-------------------------------------------------- present --------------------------------------------------------');
 
-          controllersMesh.controller0.on('TriggerClicked', e => {
-            const {position, quaternion, scale} = getMatrixWorld(swordMesh.tipMesh);
-
-            const positionAttribute = pointsMesh.geometry.getAttribute('position');
-            const positionArray = positionAttribute.array;
-            positionArray[0] = position.x;
-            positionArray[1] = position.y;
-            positionArray[2] = position.z;
-            positionAttribute.needsUpdate = true;
-          });
-          controllersMesh.controller0.on('Gripped', e => {
-            const position = new THREE.Vector3();
-            const quaternion = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            camera.matrix.decompose(position, quaternion, scale);
-
-            menuMesh.position.x = position.x;
-            menuMesh.position.y = position.y;
-            menuMesh.position.z = position.z;
-            menuMesh.quaternion.x = quaternion.x;
-            menuMesh.quaternion.y = quaternion.y;
-            menuMesh.quaternion.z = quaternion.z;
-            menuMesh.quaternion.w = quaternion.w;
-
-            menuMesh.visible = true;
-          });
-          controllersMesh.controller0.on('Ungripped', e => {
-            menuMesh.visible = false;
-          });
           controllersMesh.controller1.on('PadUnpressed', e => {
             if (teleportMesh.visible) {
               positionOffset = teleportMesh.position.clone();
             }
-          });
-          let shootFrame = null;
-          controllersMesh.controller1.on('TriggerClicked', e => {
-            const positionAttribute = pointsMesh.geometry.getAttribute('position');
-            const positionArray = positionAttribute.array;
-
-            function getPosition(x, y, z) {
-              return new THREE.Vector3(
-                positionArray[3],
-                positionArray[4],
-                positionArray[5]
-              );
-            }
-            function setPosition(x, y, z) {
-              positionArray[3] = x;
-              positionArray[4] = y;
-              positionArray[5] = z;
-              positionAttribute.needsUpdate = true;
-            }
-
-            const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
-            const barrelMatrixWorld = getMatrixWorld(gunMesh.barrelMesh);
-            const ray = barrelMatrixWorld.position.clone().sub(rootMatrixWorld.position);
-
-            setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
-
-            function recurseBullet() {
-              const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
-                if (localShootFrame === shootFrame) {
-                  const oldPosition = getPosition();
-                  const speed = 0.5;
-                  setPosition(
-                    oldPosition.x + (ray.x * speed),
-                    oldPosition.y + (ray.y * speed),
-                    oldPosition.z + (ray.z * speed)
-                  );
-
-                  recurseBullet();
-                }
-              });
-            }
-            recurseBullet();
           });
 
           var stats = new Stats();
@@ -510,99 +629,13 @@ const start = () => {
               camera.position.z += positionOffset.z;
               camera.updateMatrix();
               [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
-                controller.update(positionOffset); // XXX update(positionOffset) support was hacked in
+                controller.update({positionOffset}); // XXX update({positionOffset}) support was hacked in, and it's additionally intercepted in the controller maker
               });
-
-              // update sword
-              (() => {
-                const {position, quaternion, scale} = getMatrixWorld(controllersMesh.controller0);
-                swordMesh.position.x = position.x;
-                swordMesh.position.y = position.y;
-                swordMesh.position.z = position.z;
-                swordMesh.quaternion.x = quaternion.x;
-                swordMesh.quaternion.y = quaternion.y;
-                swordMesh.quaternion.z = quaternion.z;
-                swordMesh.quaternion.w = quaternion.w;
-              })();
-
-              // update gun
-              (() => {
-                const {position, quaternion, scale} = getMatrixWorld(controllersMesh.controller1);
-                gunMesh.position.x = position.x;
-                gunMesh.position.y = position.y;
-                gunMesh.position.z = position.z;
-                gunMesh.quaternion.x = quaternion.x;
-                gunMesh.quaternion.y = quaternion.y;
-                gunMesh.quaternion.z = quaternion.z;
-                gunMesh.quaternion.w = quaternion.w;
-              })();
-
-              // update menu targeting
-              (() => {
-                const positionAttribute = pointsMesh.geometry.getAttribute('position');
-                const positionArray = positionAttribute.array;
-                function setPosition(x, y, z) {
-                  positionArray[6] = x;
-                  positionArray[7] = y;
-                  positionArray[8] = z;
-                  positionAttribute.needsUpdate = true;
-                }
-
-                if (menuMesh.visible) {
-                  const rootMatrixWorld = getMatrixWorld(swordMesh.rootMesh);
-                  const tipMatrixWorld = getMatrixWorld(swordMesh.tipMesh);
-                  const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
-                  const controllerLine = new THREE.Line3(
-                    rootMatrixWorld.position.clone(),
-                    rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
-                  );
-                  const menuRootMatrixWorld = getMatrixWorld(menuMesh.rootMesh);
-                  const menuNormalMatrixWorld = getMatrixWorld(menuMesh.normalMesh);
-                  const menuNormal = menuNormalMatrixWorld.position.clone().sub(menuRootMatrixWorld.position);
-                  const menuPosition = menuRootMatrixWorld.position;
-                  const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormal, menuPosition);
-                  const intersectionPoint = menuPlane.intersectLine(controllerLine);
-
-                  if (intersectionPoint) {
-                    setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
-
-                    const sliceCenters = (() => {
-                      const {numSlices, innerRadius} = menuMesh;
-                      const result = Array(numSlices);
-                      for (let i = 0; i < numSlices; i++) {
-                        const absoluteCenter = new THREE.Vector3(
-                          -Math.sin((i / numSlices) * (Math.PI * 2)),
-                          Math.cos((i / numSlices) * (Math.PI * 2)),
-                          0
-                        ).multiplyScalar(innerRadius);
-                        const relativeCenter = absoluteCenter.clone().applyMatrix4(menuMesh.rootMesh.matrixWorld);
-                        result[i] = relativeCenter;
-                      }
-                      return result;
-                    })();
-                    const sliceDistanceSpecs = sliceCenters.map((center, i) => {
-                      const distance = intersectionPoint.distanceTo(center);
-                      return {
-                        center,
-                        index: i,
-                        distance,
-                      };
-                    });
-                    const sortedSliceDistanceSpecs = sliceDistanceSpecs.sort((a, b) => a.distance - b.distance);
-                    const shortestSliceDistanceSpec = sortedSliceDistanceSpecs[0];
-                    const shortestSliceDistanceIndex = shortestSliceDistanceSpec.index;
-                    
-                    menuMesh.uiMesh.solidMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
-                  }
-                } else {
-                  setPosition(0, 0, 0);
-                }
-              })();
 
               // update teleport targeting
               (() => {
-                const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
-                const tipMatrixWorld = getMatrixWorld(gunMesh.tipMesh);
+                const rootMatrixWorld = getMatrixWorld(controller1.weaponMeshes.gun.rootMesh);
+                const tipMatrixWorld = getMatrixWorld(controller1.weaponMeshes.gun.tipMesh);
                 const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),

@@ -63,7 +63,9 @@ module.exports = function(THREE, packageRoot) {
           }
         }.bind(this)
 
-        this.update = function(positionOffset) {
+        this.update = function(opts) {
+            var positionOffset = opts.positionOffset;
+
             var gamepad = navigator.getGamepads()[controllerId];
             if (gamepad && gamepad.pose && gamepad.pose.position && gamepad.pose.orientation) {
                 c.visible = true;
