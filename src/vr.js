@@ -168,22 +168,22 @@ const start = () => {
 
     let shootFrame = null;
     const _makeController = id => {
-      const result = new ViveController(0, controls);
+      const controller = new ViveController(0, controls);
 
       const menuMesh = _makeMenuMesh();
-      result.menuMesh = menuMesh;
+      controller.menuMesh = menuMesh;
 
       const weaponMeshes = {};
-      result.weaponMeshes = weaponMeshes;
+      controller.weaponMeshes = weaponMeshes;
       _makeWeaponMeshes().forEach(weaponMesh => {
          const {name, mesh} = weaponMesh;
-         result.add(mesh);
-         result.weaponMeshes[name] = mesh;
+         controller.add(mesh);
+         controller.weaponMeshes[name] = mesh;
       });
-      result.weapon = null;
+      controller.weapon = null;
 
       // update menu targeting
-      result.update = (oldUpdate => {
+      controller.update = (oldUpdate => {
         return ({positionOffset}) => {
           oldUpdate({positionOffset});
 
@@ -239,16 +239,36 @@ const start = () => {
               const sortedSliceDistanceSpecs = sliceDistanceSpecs.sort((a, b) => a.distance - b.distance);
               const shortestSliceDistanceSpec = sortedSliceDistanceSpecs[0];
               const shortestSliceDistanceIndex = shortestSliceDistanceSpec.index;
+              const weaponIndex = shortestSliceDistanceIndex;
               
-              menuMesh.uiMesh.solidMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
+              menuMesh.uiMesh.solidMesh.geometry.setSliceColor(weaponIndex, 0xca2a19);
+
+              const _setWeapon = weapon => {
+                if (controller.weapon) {
+                  controller.weaponMeshes[controller.weapon].visible = false;
+                }
+
+                controller.weaponMeshes[weapon].visible = true;
+
+                controller.weapon = weapon;
+              };
+
+              const weapon = (() => {
+                switch (weaponIndex) {
+                  case 1: return 'gun';
+                  case 2: return 'sword';
+                  default: return null;
+                }
+              })();
+              _setWeapon(weapon);
             }
           } else {
             _setPosition(0, 0, 0);
           }
         };
-      })(result.update);
+      })(controller.update);
 
-      result.on('Gripped', e => {
+      controller.on('Gripped', e => {
         const position = new THREE.Vector3();
         const quaternion = new THREE.Quaternion();
         const scale = new THREE.Vector3();
@@ -264,12 +284,11 @@ const start = () => {
 
         menuMesh.visible = true;
       });
-      result.on('Ungripped', e => {
+      controller.on('Ungripped', e => {
         menuMesh.visible = false;
       });
-
-      result.on('TriggerClicked', e => {
-        if (result.weapon === 'sword') {
+      controller.on('TriggerClicked', e => {
+        if (controller.weapon === 'sword') {
           const {position, quaternion, scale} = getMatrixWorld(weaponMeshes.sword.tipMesh);
 
           const positionAttribute = pointsMesh.geometry.getAttribute('position');
@@ -278,7 +297,7 @@ const start = () => {
           positionArray[1] = position.y;
           positionArray[2] = position.z;
           positionAttribute.needsUpdate = true;
-        } else if (result.weapon === 'gun') {
+        } else if (controller.weapon === 'gun') {
           const positionAttribute = pointsMesh.geometry.getAttribute('position');
           const positionArray = positionAttribute.array;
 
@@ -321,7 +340,7 @@ const start = () => {
         }
       });
 
-      return result;
+      return controller;
     };
 
     const _makeWeaponMeshes = (() => {
