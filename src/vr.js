@@ -3,7 +3,7 @@ window.THREE = THREE;
 require('./modules/three/examples/js/effects/VREffect');
 require('./modules/three/examples/js/controls/VRControls');
 const ThreeViveController = require('./modules/three-vive-controller');
-const ViveController = ThreeViveController(THREE, 'http://10.0.0.6:3000/src/modules/three-vive-controller/');
+const ViveController = ThreeViveController(THREE, '/src/modules/three-vive-controller/');
 require('./modules/three/examples/js/controls/OrbitControls');
 
 require('./modules/physijs/physi.js');
