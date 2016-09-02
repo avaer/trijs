@@ -175,13 +175,20 @@ const start = () => {
     const rootMesh = new THREE.Points(rootGeometry, material4);
     mesh.add(rootMesh);
     mesh.rootMesh = rootMesh;
-    
+
     const tipGeometry = new THREE.Geometry();
     tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
     const tipMesh = new THREE.Points(tipGeometry, material4);
-    tipMesh.position.z = -0.2;
-    mesh1.add(tipMesh);
+    tipMesh.position.z = -1;
+    mesh.add(tipMesh);
     mesh.tipMesh = tipMesh;
+    
+    const barrelGeometry = new THREE.Geometry();
+    barrelGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+    const barrelMesh = new THREE.Points(barrelGeometry, material4);
+    barrelMesh.position.z = -0.2;
+    mesh1.add(barrelMesh);
+    mesh.barrelMesh = barrelMesh;
     
     return mesh;
   })();
@@ -253,14 +260,21 @@ const start = () => {
   })();
   scene.add(menuMesh);
 
+  const teleportMesh = (() => {
+    const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
+    geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+    geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
+    const mesh = new THREE.Mesh(geometry, material2);
+    return mesh;
+  })();
+  scene.add(teleportMesh);
+
   const light2 = new THREE.DirectionalLight(0xFFFFFF, 1);
   light2.position.set(-10, 10, 10);
   scene.add(light2);
 
   const camera = new THREE.PerspectiveCamera( 120, 1, 0.001, 1000 );
-  /* camera.position.z = 1;
-  camera.position.y = 1.5;
-  camera.rotation.x = -0.1; */
+  const cameraOffset = new THREE.Vector3();
 
   const renderer = new THREE.WebGLRenderer( { antialias: false } );
   renderer.setClearColor( 0xffffff, 1);
@@ -333,14 +347,14 @@ const start = () => {
             }
 
             const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
-            const tipMatrixWorld = getMatrixWorld(gunMesh.tipMesh);
+            const barrelMatrixWorld = getMatrixWorld(gunMesh.barrelMesh);
             const ray = new THREE.Vector3(
-              tipMatrixWorld.position.x - rootMatrixWorld.position.x,
-              tipMatrixWorld.position.y - rootMatrixWorld.position.y,
-              tipMatrixWorld.position.z - rootMatrixWorld.position.z,
+              barrelMatrixWorld.position.x - rootMatrixWorld.position.x,
+              barrelMatrixWorld.position.y - rootMatrixWorld.position.y,
+              barrelMatrixWorld.position.z - rootMatrixWorld.position.z,
             );
 
-            setPosition(tipMatrixWorld.position.x, tipMatrixWorld.position.y, tipMatrixWorld.position.z);
+            setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
 
             function recurseBullet() {
               const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
@@ -399,34 +413,73 @@ const start = () => {
                 gunMesh.quaternion.w = quaternion.w;
               })();
 
-              // update menu
+              // update menu targeting
               (() => {
-                 const rootMatrixWorld = getMatrixWorld(swordMesh.rootMesh);
-                 const tipMatrixWorld = getMatrixWorld(swordMesh.tipMesh);
-                 const ray = new THREE.Vector3(
+                const positionAttribute = pointsMesh.geometry.getAttribute('position');
+                const positionArray = positionAttribute.array;
+                function setPosition(x, y, z) {
+                  positionArray[6] = x;
+                  positionArray[7] = y;
+                  positionArray[8] = z;
+                  positionAttribute.needsUpdate = true;
+                }
+
+                if (menuMesh.visible) {
+                  const rootMatrixWorld = getMatrixWorld(swordMesh.rootMesh);
+                  const tipMatrixWorld = getMatrixWorld(swordMesh.tipMesh);
+                  const ray = new THREE.Vector3(
+                    tipMatrixWorld.position.x - rootMatrixWorld.position.x,
+                    tipMatrixWorld.position.y - rootMatrixWorld.position.y,
+                    tipMatrixWorld.position.z - rootMatrixWorld.position.z,
+                  );
+                  const controllerLine = new THREE.Line3(
+                    rootMatrixWorld.position.clone(),
+                    rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
+                  );
+                  const menuMatrixWorld = getMatrixWorld(menuMesh);
+                  const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), menuMatrixWorld.position);
+                  const intersectionPoint = menuPlane.intersectLine(controllerLine);
+
+                  if (intersectionPoint) {
+                    setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+                  }
+                } else {
+                  setPosition(0, 0, 0);
+                }
+              })();
+
+              // update teleport targeting
+              (() => {
+                const rootMatrixWorld = getMatrixWorld(gunMesh.rootMesh);
+                const tipMatrixWorld = getMatrixWorld(gunMesh.tipMesh);
+                const ray = new THREE.Vector3(
                   tipMatrixWorld.position.x - rootMatrixWorld.position.x,
                   tipMatrixWorld.position.y - rootMatrixWorld.position.y,
                   tipMatrixWorld.position.z - rootMatrixWorld.position.z,
                 );
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),
-                  rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(10))
+                  rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(15))
                 );
-                const menuMatrixWorld = getMatrixWorld(menuMesh);
-                const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), menuMatrixWorld.position);
-                const intersectionPoint = menuPlane.intersectLine(controllerLine);
+                const groundPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
+                const intersectionPoint = groundPlane.intersectLine(controllerLine);
 
-                // XXX
                 if (intersectionPoint) {
-                  const positionAttribute = pointsMesh.geometry.getAttribute('position');
-                  const positionArray = positionAttribute.array;
-                  function setPosition(x, y, z) {
-                    positionArray[6] = x;
-                    positionArray[7] = y;
-                    positionArray[8] = z;
-                    positionAttribute.needsUpdate = true;
+                  if (!teleportMesh.visible) {
+                    teleportMesh.visible = true;
                   }
-                  setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+                  teleportMesh.position.x = intersectionPoint.x;
+                  teleportMesh.position.y = intersectionPoint.y;
+                  teleportMesh.position.z = intersectionPoint.z;
+
+                  teleportMesh.quaternion.x = 0;
+                  teleportMesh.quaternion.y = rootMatrixWorld.quaternion.y;
+                  teleportMesh.quaternion.z = 0;
+                  teleportMesh.quaternion.w = rootMatrixWorld.quaternion.w;
+                } else {
+                  if (teleportMesh.visible) {
+                    teleportMesh.visible = false;
+                  }
                 }
               })();
 
