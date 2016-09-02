@@ -86,9 +86,9 @@ const start = () => {
     color: 0x333333,
     size: 0.025,
   });
-  const material5 = new THREE.MeshLambertMaterial({
-    color: 0xCCCCCC,
-    shading: THREE.FlatShading,
+  const material5 = new THREE.MeshBasicMaterial({
+    color: 0xFFFFFF,
+    // shading: THREE.FlatShading,
     vertexColors: THREE.VertexColors,
   });
 
@@ -226,6 +226,9 @@ const start = () => {
     mesh.innerRadius = innerRadius;
 
     const uiMesh = (() => {
+      const mesh = new THREE.Object3D();
+      mesh.position.z = -1.5;
+
       const geometry = (() => {
         const result = new THREE.BufferGeometry();
 
@@ -236,9 +239,7 @@ const start = () => {
         const positions = new Float32Array(numTriangles * 3);
         for (let i = 0; i < numSlices; i++) {
           const thetaLength = 1 / numSlices;
-          // const thetaLengthHalf = thetaLength / 2;
           const thetaStart = (1 / 12) + (i / numSlices);
-          // const thetaMidpoint = thetaStart + thetaLengthHalf;
           const planeGeometry = new THREE.CircleGeometry(radius, numSegments, thetaStart * (Math.PI * 2), thetaLength * (Math.PI * 2));
           const {vertices, faces} = planeGeometry;
           for (let j = 0; j < numSegments; j++) {
@@ -265,9 +266,9 @@ const start = () => {
 
         const colors = new Float32Array(numTriangles * 3);
         for (let i = 0; i < numTriangles; i++) {
-          colors[(i * 3) + 0] = 0x80 / 0xFF;
-          colors[(i * 3) + 1] = 0x80 / 0xFF;
-          colors[(i * 3) + 2] = 0x80 / 0xFF;
+          colors[(i * 3) + 0] = 1;
+          colors[(i * 3) + 1] = 1;
+          colors[(i * 3) + 2] = 1;
         }
         result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
@@ -276,9 +277,9 @@ const start = () => {
           const colors = colorsAttribute.array;
 
           for (let i = 0; i < numTriangles; i++) {
-            colors[(i * 3) + 0] = 0x80 / 0xFF;
-            colors[(i * 3) + 1] = 0x80 / 0xFF;
-            colors[(i * 3) + 2] = 0x80 / 0xFF;
+            colors[(i * 3) + 0] = 1;
+            colors[(i * 3) + 1] = 1;
+            colors[(i * 3) + 2] = 1;
           }
 
           const colorFloatArray = _colorHexToFloatArray(colorHex);
@@ -301,8 +302,14 @@ const start = () => {
 
         return result;
       })();
-      const mesh = new THREE.Mesh(geometry, material5);
-      mesh.position.z = -1.5;
+
+      const solidMesh = new THREE.Mesh(geometry, material5);
+      mesh.add(solidMesh);
+      mesh.solidMesh = solidMesh;
+
+      const wireframeMesh = new THREE.Mesh(geometry, material2);
+      mesh.add(wireframeMesh);
+
       return mesh;
     })();
     mesh.add(uiMesh);
@@ -585,7 +592,7 @@ const start = () => {
                     const shortestSliceDistanceSpec = sortedSliceDistanceSpecs[0];
                     const shortestSliceDistanceIndex = shortestSliceDistanceSpec.index;
                     
-                    menuMesh.uiMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
+                    menuMesh.uiMesh.solidMesh.geometry.setSliceColor(shortestSliceDistanceIndex, 0xca2a19);
                   }
                 } else {
                   setPosition(0, 0, 0);
