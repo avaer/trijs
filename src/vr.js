@@ -6,6 +6,10 @@ const ThreeViveController = require('./modules/three-vive-controller');
 const ViveController = ThreeViveController(THREE, 'http://10.0.0.6:3000/src/modules/three-vive-controller/');
 require('./modules/three/examples/js/controls/OrbitControls');
 
+require('./modules/physijs/physi.js');
+Physijs.scripts.worker = '/src/modules/physijs/physijs_worker.js';
+Physijs.scripts.ammo = '/src/modules/physijs/ammo.js';
+
 const {navigator, document, VRDisplay} = window;
 
 // start
