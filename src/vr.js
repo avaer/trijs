@@ -78,11 +78,9 @@ const start = () => {
   const material4 = new THREE.PointsMaterial({
     color: 0x333333,
     size: 0.025,
-    /* opacity: 0.5,
-    transparent: true, */
   });
 
-  const boxMesh = (() => {
+  const sphereMesh = (() => {
     const result = new THREE.Object3D();
     
     const geometry = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 6, 4));
@@ -99,7 +97,7 @@ const start = () => {
     result.rotation.y = Math.PI / 2;
     return result;
   })();
-  scene.add(boxMesh);
+  scene.add(sphereMesh);
 
   const planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(100, 100, 100, 100);
@@ -284,14 +282,14 @@ const start = () => {
             recurseShoot();
           });
 
-var stats = new Stats();
-stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild( stats.dom );
+          var stats = new Stats();
+          stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+          document.body.appendChild( stats.dom );
           
           let lastTime = Date.now();
           function recurseRender() {
             d.requestAnimationFrame(() => {
-stats.begin();
+              stats.begin();
 
               const pose = controls.update(); // XXX returning the pose here was hacked in
 
@@ -323,9 +321,9 @@ stats.begin();
                 gunMesh.quaternion.w = quaternion.w;
               })();
 
-              // update box
-              boxMesh.rotation.x = (boxMesh.rotation.x + rotationDiff) % (Math.PI * 2);
-              boxMesh.rotation.y = (boxMesh.rotation.y + rotationDiff) % (Math.PI * 2);
+              // update rotating sphere
+              sphereMesh.rotation.x = (sphereMesh.rotation.x + rotationDiff) % (Math.PI * 2);
+              sphereMesh.rotation.y = (sphereMesh.rotation.y + rotationDiff) % (Math.PI * 2);
               
               effect.render(scene, camera);
               
@@ -335,7 +333,7 @@ stats.begin();
               
               lastTime = now;
 
-stats.end();
+              stats.end();
               
               recurseRender();
             });
