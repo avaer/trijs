@@ -63,9 +63,7 @@ module.exports = function(THREE, packageRoot) {
           }
         }.bind(this)
 
-        function update() {
-            requestAnimationFrame(update);
-
+        this.update = function(positionOffset) {
             var gamepad = navigator.getGamepads()[controllerId];
             if (gamepad && gamepad.pose && gamepad.pose.position && gamepad.pose.orientation) {
                 c.visible = true;
@@ -82,8 +80,15 @@ module.exports = function(THREE, packageRoot) {
                 c.quaternion.fromArray(pose.orientation);
                 c.matrix.compose(c.position, c.quaternion, c.scale);
                 c.matrix.multiplyMatrices(c.standingMatrix, c.matrix);
-                c.matrixWorldNeedsUpdate = true;
 
+                const position = new THREE.Vector3();
+                const quaternion = new THREE.Quaternion();
+                const scale = new THREE.Vector3();
+                c.matrix.decompose(position, quaternion, scale);
+                position.add(positionOffset);
+                c.matrix.compose(position, quaternion, scale);
+
+                c.matrixWorldNeedsUpdate = true;
 
                 bindButton(c.PadTouched, c.PadUntouched, padButton, "touched")
                 bindButton(c.PadPressed, c.PadUnpressed, padButton, "pressed")
@@ -123,9 +128,7 @@ module.exports = function(THREE, packageRoot) {
             }
             c.connected = !!gamepad
 
-        }
-
-        update();
+        };
 
     };
 

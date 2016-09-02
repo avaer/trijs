@@ -87,16 +87,16 @@ const start = () => {
 
   const sphereMesh = (() => {
     const result = new THREE.Object3D();
-    
+
     const geometry = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 6, 4));
     geometry.computeVertexNormals();
-    
+
     const mesh = new THREE.Mesh(geometry, material);
     result.add(mesh);
 
     const wireMesh = new THREE.Mesh(geometry, material2);
     result.add(wireMesh);
-    
+
     result.position.y = 1.5;
     result.rotation.x = Math.PI / 2;
     result.rotation.y = Math.PI / 2;
@@ -114,7 +114,7 @@ const start = () => {
 
   const swordMesh = (() => {
     const mesh = new THREE.Object3D();
-    
+
     const geometry1 = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9);
     geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
     geometry1.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
@@ -130,12 +130,12 @@ const start = () => {
     ]), 3));
     const mesh2 = new THREE.Line(geometry2, material3);
     mesh.add(mesh2);
-    
+
     const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
     geometry3.computeVertexNormals();
     const mesh3 = new THREE.Mesh(geometry3, material2);
     mesh.add(mesh3);
-   
+
     const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
     geometry4.computeVertexNormals();
     const mesh4 = new THREE.Mesh(geometry4, material);
@@ -149,21 +149,21 @@ const start = () => {
     const rootMesh = new THREE.Points(rootGeometry, material4);
     mesh.add(rootMesh);
     mesh.rootMesh = rootMesh;
-    
+
     const tipGeometry = new THREE.Geometry();
     tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
     const tipMesh = new THREE.Points(tipGeometry, material4);
     tipMesh.position.z = -1;
     mesh1.add(tipMesh);
     mesh.tipMesh = tipMesh;
-    
+
     return mesh;
   })();
   scene.add(swordMesh);
 
   const gunMesh = (() => {
     const mesh = new THREE.Object3D();
-    
+
     const geometry1 = new THREE.Geometry();
     geometry1.vertices.push(new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -0.2 ));
     const mesh1 = new THREE.Line(geometry1, material3);
@@ -182,14 +182,14 @@ const start = () => {
     tipMesh.position.z = -1;
     mesh.add(tipMesh);
     mesh.tipMesh = tipMesh;
-    
+
     const barrelGeometry = new THREE.Geometry();
     barrelGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
     const barrelMesh = new THREE.Points(barrelGeometry, material4);
     barrelMesh.position.z = -0.2;
     mesh1.add(barrelMesh);
     mesh.barrelMesh = barrelMesh;
-    
+
     return mesh;
   })();
   scene.add(gunMesh);
@@ -274,7 +274,7 @@ const start = () => {
   scene.add(light2);
 
   const camera = new THREE.PerspectiveCamera( 120, 1, 0.001, 1000 );
-  const cameraOffset = new THREE.Vector3();
+  let positionOffset = new THREE.Vector3(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer( { antialias: false } );
   renderer.setClearColor( 0xffffff, 1);
@@ -288,10 +288,20 @@ const start = () => {
   const controls = new THREE.VRControls(camera);
   controls.standing = true;
 
-  const controller0 = new ViveController(0, controls);
-  scene.add(controller0);
-  const controller1 = new ViveController(1, controls);
-  scene.add(controller1);
+  const controllersMesh = (() => {
+    const result = new THREE.Object3D();
+
+    const controller0 = new ViveController(0, controls);
+    scene.add(controller0);
+    result.controller0 = controller0;
+
+    const controller1 = new ViveController(1, controls);
+    scene.add(controller1);
+    result.controller1 = controller1;
+
+    return result;
+  })();
+  scene.add(controllersMesh);
 
   function onResize(e) {
     effect.setSize(window.innerWidth, window.innerHeight);
@@ -312,7 +322,7 @@ const start = () => {
         .then(() => {
           console.log('-------------------------------------------------- present --------------------------------------------------------');
 
-          controller0.on('TriggerClicked', e => {
+          controllersMesh.controller0.on('TriggerClicked', e => {
             const {position, quaternion, scale} = getMatrixWorld(swordMesh.tipMesh);
 
             const positionAttribute = pointsMesh.geometry.getAttribute('position');
@@ -322,13 +332,19 @@ const start = () => {
             positionArray[2] = position.z;
             positionAttribute.needsUpdate = true;
           });
-          controller0.on('Gripped', e => {
-            console.log('gripped');
-
-            menuMesh.visible = !menuMesh.visible;
+          controllersMesh.controller0.on('Gripped', e => {
+            menuMesh.visible = true;
+          });
+          controllersMesh.controller0.on('Ungripped', e => {
+            menuMesh.visible = false;
+          });
+          controllersMesh.controller1.on('PadUnpressed', e => {
+            if (teleportMesh.visible) {
+              positionOffset = teleportMesh.position.clone();
+            }
           });
           let shootFrame = null;
-          controller1.on('TriggerClicked', e => {
+          controllersMesh.controller1.on('TriggerClicked', e => {
             const positionAttribute = pointsMesh.geometry.getAttribute('position');
             const positionArray = positionAttribute.array;
 
@@ -377,7 +393,7 @@ const start = () => {
           var stats = new Stats();
           stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
           document.body.appendChild( stats.dom );
-          
+
           let lastTime = Date.now();
           function recurseRender() {
             d.requestAnimationFrame(() => {
@@ -389,9 +405,17 @@ const start = () => {
               const timeDiff = now - lastTime;
               const rotationDiff = (timeDiff / 1000) * (0.5 * Math.PI / 2);
 
+              // offset objects by player position
+              camera.position.x += positionOffset.x;
+              camera.position.y += positionOffset.y;
+              camera.position.z += positionOffset.z;
+              [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
+                controller.update(positionOffset); // XXX update(positionOffset) support was hacked in
+              });
+
               // update sword
               (() => {
-                const {position, quaternion, scale} = getMatrixWorld(controller0);
+                const {position, quaternion, scale} = getMatrixWorld(controllersMesh.controller0);
                 swordMesh.position.x = position.x;
                 swordMesh.position.y = position.y;
                 swordMesh.position.z = position.z;
@@ -403,7 +427,7 @@ const start = () => {
 
               // update gun
               (() => {
-                const {position, quaternion, scale} = getMatrixWorld(controller1);
+                const {position, quaternion, scale} = getMatrixWorld(controllersMesh.controller1);
                 gunMesh.position.x = position.x;
                 gunMesh.position.y = position.y;
                 gunMesh.position.z = position.z;
@@ -465,9 +489,6 @@ const start = () => {
                 const intersectionPoint = groundPlane.intersectLine(controllerLine);
 
                 if (intersectionPoint) {
-                  if (!teleportMesh.visible) {
-                    teleportMesh.visible = true;
-                  }
                   teleportMesh.position.x = intersectionPoint.x;
                   teleportMesh.position.y = intersectionPoint.y;
                   teleportMesh.position.z = intersectionPoint.z;
@@ -476,6 +497,10 @@ const start = () => {
                   teleportMesh.quaternion.y = rootMatrixWorld.quaternion.y;
                   teleportMesh.quaternion.z = 0;
                   teleportMesh.quaternion.w = rootMatrixWorld.quaternion.w;
+
+                  if (!teleportMesh.visible) {
+                    teleportMesh.visible = true;
+                  }
                 } else {
                   if (teleportMesh.visible) {
                     teleportMesh.visible = false;
@@ -486,17 +511,17 @@ const start = () => {
               // update rotating sphere
               sphereMesh.rotation.x = (sphereMesh.rotation.x + rotationDiff) % (Math.PI * 2);
               sphereMesh.rotation.y = (sphereMesh.rotation.y + rotationDiff) % (Math.PI * 2);
-              
+
               effect.render(scene, camera);
-              
+
               if (pose) {
-              d.submitFrame(pose);
+                d.submitFrame(pose);
               }
-              
+
               lastTime = now;
 
               stats.end();
-              
+
               recurseRender();
             });
           }
