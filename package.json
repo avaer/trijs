@@ -16,5 +16,26 @@
   },
   "eslintConfig": {
     "extends": "./node_modules/react-scripts/config/eslint.js"
-  }
+  },
+  "description": "Three.js VR world procedurally generated in the browser.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modulesio/trijs.git"
+  },
+  "keywords": [
+    "trijs",
+    "threejs",
+    "webvr",
+    "webgl",
+    "procedural",
+    "generation",
+    "voxel"
+  ],
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modulesio/trijs/issues"
+  },
+  "homepage": "https://github.com/modulesio/trijs#readme"
 }
