@@ -168,10 +168,11 @@ const start = () => {
 
     let shootFrame = null;
     const _makeController = id => {
-      const controller = new ViveController(0, controls);
+      const controller = new ViveController(id, controls);
 
       const menuMesh = _makeMenuMesh();
       controller.menuMesh = menuMesh;
+      scene.add(menuMesh);
 
       const weaponMeshes = {};
       controller.weaponMeshes = weaponMeshes;
@@ -246,11 +247,13 @@ const start = () => {
               const _setWeapon = weapon => {
                 if (controller.weapon) {
                   controller.weaponMeshes[controller.weapon].visible = false;
+                  controller.weapon = null;
                 }
 
-                controller.weaponMeshes[weapon].visible = true;
-
-                controller.weapon = weapon;
+                if (weapon) {
+                  controller.weaponMeshes[weapon].visible = true;
+                  controller.weapon = weapon;
+                }
               };
 
               const weapon = (() => {
@@ -269,6 +272,7 @@ const start = () => {
       })(controller.update);
 
       controller.on('Gripped', e => {
+console.log('gripped', menuMesh);
         const position = new THREE.Vector3();
         const quaternion = new THREE.Quaternion();
         const scale = new THREE.Vector3();
@@ -322,19 +326,21 @@ const start = () => {
           _setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
 
           const _recurseBullet = () => {
-            const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
-              if (localShootFrame === shootFrame) {
-                const oldPosition = _getPosition();
-                const speed = 0.5;
-                _setPosition(
-                  oldPosition.x + (ray.x * speed),
-                  oldPosition.y + (ray.y * speed),
-                  oldPosition.z + (ray.z * speed)
-                );
+            if (display) {
+              const localShootFrame = shootFrame = display.requestAnimationFrame(() => {
+                if (localShootFrame === shootFrame) {
+                  const oldPosition = _getPosition();
+                  const speed = 0.5;
+                  _setPosition(
+                    oldPosition.x + (ray.x * speed),
+                    oldPosition.y + (ray.y * speed),
+                    oldPosition.z + (ray.z * speed)
+                  );
 
-                _recurseBullet();
-              }
-            });
+                  _recurseBullet();
+                }
+              });
+            }
           };
           _recurseBullet();
         }
@@ -365,9 +371,6 @@ const start = () => {
 
         const rootGeometry = new THREE.Geometry();
         rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
-        const rootMesh = new THREE.Points(rootGeometry, material4);
-        mesh.add(rootMesh);
-        mesh.rootMesh = rootMesh;
 
         const tipGeometry = new THREE.Geometry();
         tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -390,6 +393,10 @@ const start = () => {
           mesh4.position.y = -(0.05 * 0.1);
           mesh4.rotation.x = -(Math.PI / 2) + 0.1;
           mesh.add(mesh4);
+
+          const rootMesh = new THREE.Points(rootGeometry, material4);
+          mesh.add(rootMesh);
+          mesh.rootMesh = rootMesh;
 
           const tipMesh = new THREE.Points(tipGeometry, material4);
           tipMesh.position.z = -1;
@@ -443,10 +450,16 @@ const start = () => {
         const swordMesh = _makeSwordMesh();
         const gunMesh = _makeGunMesh();
 
-        return {
-          sword: swordMesh,
-          gun: gunMesh,
-        };
+        return [
+          {
+            name: 'sword',
+            mesh: swordMesh,
+          },
+          {
+            name: 'gun',
+            mesh: gunMesh,
+          },
+        ];
       };
     })();
 
@@ -610,12 +623,13 @@ const start = () => {
   window.addEventListener('resize', onResize, true);
   window.addEventListener('vrdisplaypresentchange', onResize, true);
 
+  let display = null;
   navigator.getVRDisplays()
     .then(ds => {
       console.log(ds);
-      const d = ds.find(d => d instanceof VRDisplay);
+      display = ds.find(d => d instanceof VRDisplay);
 
-      d.requestPresent([{
+      display.requestPresent([{
         source: renderer.domElement
       }])
         .then(() => {
@@ -632,8 +646,8 @@ const start = () => {
           document.body.appendChild( stats.dom );
 
           let lastTime = Date.now();
-          function recurseRender() {
-            d.requestAnimationFrame(() => {
+          const _recurseRender = () => {
+            display.requestAnimationFrame(() => {
               stats.begin();
 
               const pose = controls.update(); // XXX returning the pose here was hacked in
@@ -653,8 +667,8 @@ const start = () => {
 
               // update teleport targeting
               (() => {
-                const rootMatrixWorld = getMatrixWorld(controller1.weaponMeshes.gun.rootMesh);
-                const tipMatrixWorld = getMatrixWorld(controller1.weaponMeshes.gun.tipMesh);
+                const rootMatrixWorld = getMatrixWorld(controllersMesh.controller1.weaponMeshes.gun.rootMesh);
+                const tipMatrixWorld = getMatrixWorld(controllersMesh.controller1.weaponMeshes.gun.tipMesh);
                 const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),
@@ -690,17 +704,17 @@ const start = () => {
               effect.render(scene, camera);
 
               if (pose) {
-                d.submitFrame(pose);
+                display.submitFrame(pose);
               }
 
               lastTime = now;
 
               stats.end();
 
-              recurseRender();
+              _recurseRender();
             });
-          }
-          recurseRender();
+          };
+          _recurseRender();
         })
         .catch(err => {
           console.warn(err);
