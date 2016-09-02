@@ -279,7 +279,7 @@ const start = () => {
               const localShootFrame = shootFrame = d.requestAnimationFrame(() => {
                 if (localShootFrame === shootFrame) {
                   const oldPosition = getPosition();
-                  const speed = 0.1;
+                  const speed = 0.5;
                   setPosition(
                     oldPosition.x + (ray.x * speed),
                     oldPosition.y + (ray.y * speed),
