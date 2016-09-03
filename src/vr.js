@@ -165,15 +165,6 @@ const start = () => {
     };
   })();
 
-  const teleportMesh = (() => {
-    const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
-    geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-    geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
-    const mesh = new THREE.Mesh(geometry, material2);
-    return mesh;
-  })();
-  scene.add(teleportMesh);
-
   const light = new THREE.AmbientLight(0x404040);
   scene.add(light);
 
@@ -272,8 +263,13 @@ const start = () => {
       controller.tipMesh = tipMesh;
 
       const menuMesh = _makeMenuMesh();
-      controller.menuMesh = menuMesh;
       scene.add(menuMesh);
+      controller.menuMesh = menuMesh;
+
+      const teleportMesh = _makeTeleportMesh();
+      scene.add(teleportMesh);
+      controller.teleportMesh = teleportMesh;
+      controller.teleporting = false;
 
       const weaponMeshes = {};
       controller.weaponMeshes = weaponMeshes;
@@ -309,6 +305,37 @@ const start = () => {
             weaponMesh.quaternion.w = controllerMatrixWorld.quaternion.w;
 
             weaponMesh.updateMatrixWorld(); 
+          }
+
+          if (controller.teleporting) {
+            const rootMatrixWorld = getMatrixWorld(controller.rootMesh);
+            const tipMatrixWorld = getMatrixWorld(controller.tipMesh);
+            const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
+            const controllerLine = new THREE.Line3(
+              rootMatrixWorld.position.clone(),
+              rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(15))
+            );
+            const groundPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
+            const intersectionPoint = groundPlane.intersectLine(controllerLine);
+
+            if (intersectionPoint) {
+              teleportMesh.position.x = intersectionPoint.x;
+              teleportMesh.position.y = intersectionPoint.y;
+              teleportMesh.position.z = intersectionPoint.z;
+
+              teleportMesh.quaternion.x = 0;
+              teleportMesh.quaternion.y = rootMatrixWorld.quaternion.y;
+              teleportMesh.quaternion.z = 0;
+              teleportMesh.quaternion.w = rootMatrixWorld.quaternion.w;
+
+              if (!teleportMesh.visible) {
+                teleportMesh.visible = true;
+              }
+            } else {
+              if (teleportMesh.visible) {
+                teleportMesh.visible = false;
+              }
+            }
           }
 
           if (menuMesh.visible) {
@@ -397,6 +424,14 @@ const start = () => {
           menuMesh.quaternion.w = quaternion.w;
 
           menuMesh.visible = true;
+
+          if (controller.teleporting) {
+            controller.teleporting = false;
+
+            if (teleportMesh.visible) {
+              teleportMesh.visible = false;
+            }
+          }
         }
       });
       controller.on('Ungripped', e => {
@@ -444,6 +479,22 @@ const start = () => {
           }
         }
       });
+      controller.on('PadPressed', e => {
+        if (!controller.weapon && !menuMesh.visible) {
+          controller.teleporting = true;
+        }
+      });
+      controller.on('PadUnpressed', e => {
+        if (controller.teleporting) {
+          if (teleportMesh.visible) {
+            positionOffset = teleportMesh.position.clone();
+
+            teleportMesh.visible = false;
+          }
+
+          controller.teleporting = false;
+        }
+      });
       controller.on('TriggerClicked', e => {
         if (controller.weapon === 'sword') {
           const {position, quaternion, scale} = getMatrixWorld(weaponMeshes.sword.tipMesh);
@@ -489,6 +540,17 @@ const start = () => {
       });
 
       return controller;
+    };
+
+    const _makeTeleportMesh = () => {
+      const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
+      geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+      geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
+
+      const mesh = new THREE.Mesh(geometry, material2);
+      mesh.visible = false;
+
+      return mesh;
     };
 
     const _makeWeaponMeshes = (() => {
@@ -850,11 +912,6 @@ const start = () => {
 
             controllersMesh.controller0.vibrate(vibrateIntensity, vibrateTime);
           });
-          controllersMesh.controller1.on('PadUnpressed', e => {
-            if (teleportMesh.visible) {
-              positionOffset = teleportMesh.position.clone();
-            }
-          });
 
           var stats = new Stats();
           stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -879,38 +936,6 @@ const start = () => {
               [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
                 controller.update({positionOffset}); // XXX update({positionOffset}) support was hacked in, and it's additionally intercepted in the controller maker
               });
-
-              // update teleport targeting
-              (() => {
-                const rootMatrixWorld = getMatrixWorld(controllersMesh.controller1.rootMesh);
-                const tipMatrixWorld = getMatrixWorld(controllersMesh.controller1.tipMesh);
-                const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
-                const controllerLine = new THREE.Line3(
-                  rootMatrixWorld.position.clone(),
-                  rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(15))
-                );
-                const groundPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
-                const intersectionPoint = groundPlane.intersectLine(controllerLine);
-
-                if (intersectionPoint) {
-                  teleportMesh.position.x = intersectionPoint.x;
-                  teleportMesh.position.y = intersectionPoint.y;
-                  teleportMesh.position.z = intersectionPoint.z;
-
-                  teleportMesh.quaternion.x = 0;
-                  teleportMesh.quaternion.y = rootMatrixWorld.quaternion.y;
-                  teleportMesh.quaternion.z = 0;
-                  teleportMesh.quaternion.w = rootMatrixWorld.quaternion.w;
-
-                  if (!teleportMesh.visible) {
-                    teleportMesh.visible = true;
-                  }
-                } else {
-                  if (teleportMesh.visible) {
-                    teleportMesh.visible = false;
-                  }
-                }
-              })();
 
               // update rotating sphere
               sphereMesh.rotation.x = (sphereMesh.rotation.x + rotationDiff) % (Math.PI * 2);
