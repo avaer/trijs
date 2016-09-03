@@ -136,7 +136,7 @@ const start = () => {
   const gridMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(100, 100, 100, 100);
     const mesh = new THREE.Mesh(geometry, material2);
-    mesh.rotation.x = Math.PI / 2;
+    mesh.rotation.x = -(Math.PI / 2);
     return mesh;
   })();
   scene.add(gridMesh);
@@ -657,8 +657,27 @@ const start = () => {
           console.log('-------------------------------------------------- present --------------------------------------------------------');
 
           controllersMesh.controller0.on('PadUnpressed', e => {
-            boxPhysicsMesh.position.y = 10;
+            boxPhysicsMesh.position.x = 0;
+            boxPhysicsMesh.position.y = 3;
+            boxPhysicsMesh.position.z = -2;
+
+            boxPhysicsMesh.rotation.x = 0;
+            boxPhysicsMesh.rotation.y = 0;
+            boxPhysicsMesh.rotation.z = 0;
+            boxPhysicsMesh.rotation.w = 0;
+
+            boxPhysicsMesh._physijs.linearVelocity.x = 0;
+            boxPhysicsMesh._physijs.linearVelocity.y = 0;
+            boxPhysicsMesh._physijs.linearVelocity.z = 0;
+
+            boxPhysicsMesh._physijs.angularVelocity.x = 0;
+            boxPhysicsMesh._physijs.angularVelocity.y = 0;
+            boxPhysicsMesh._physijs.angularVelocity.z = 0;
+
             boxPhysicsMesh.__dirtyPosition = true;
+            boxPhysicsMesh.__dirtyRotation = true;
+
+            controllersMesh.controller0.vibrate(0.1, 10);
           });
           controllersMesh.controller1.on('PadUnpressed', e => {
             if (teleportMesh.visible) {
@@ -784,7 +803,7 @@ const start = () => {
     );
 
     const physicsMesh = new Physijs.PlaneMesh(floorPhysicsGeometry, floorPhysicsMaterial, 0);
-    physicsMesh.rotation.x = Math.PI / 2;
+    physicsMesh.rotation.x = -(Math.PI / 2);
 
     return physicsMesh;
   })();
