@@ -122,7 +122,6 @@ const start = () => {
     result.position.z = -2;
 
     const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-    // geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
 
     const mesh = new THREE.Mesh(geometry, material);
     result.add(mesh);
@@ -507,13 +506,13 @@ const start = () => {
           const positionArray = positionAttribute.array;
 
           const rootMatrixWorld = getMatrixWorld(weaponMeshes.gun.rootMesh);
-          const barrelMatrixWorld = getMatrixWorld(weaponMeshes.gun.barrelMesh);
-          const ray = barrelMatrixWorld.position.clone().sub(rootMatrixWorld.position);
+          const barrelTipMatrixWorld = getMatrixWorld(weaponMeshes.gun.barrelTipMesh);
+          const ray = barrelTipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
 
           setGunPointPosition(
-            barrelMatrixWorld.position.x,
-            barrelMatrixWorld.position.y,
-            barrelMatrixWorld.position.z
+            barrelTipMatrixWorld.position.x,
+            barrelTipMatrixWorld.position.y,
+            barrelTipMatrixWorld.position.z
           );
 
           const _recurseBullet = () => {
@@ -622,8 +621,13 @@ const start = () => {
       })();
 
       const _makeGunMesh = (() => {
-        const geometry1 = new THREE.Geometry();
-        geometry1.vertices.push(new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -0.2 ));
+        const geometry1 = new THREE.BoxBufferGeometry(0.05, 0.2, 0.05);
+        geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, -0.005));
+        geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2) - (Math.PI * 0.3)));
+
+        const geometry2 = new THREE.BoxBufferGeometry(0.05, 0.175, 0.025);
+        geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.175 / 2), -0.01));
+        geometry2.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
 
         const barrelGeometry = new THREE.Geometry();
         barrelGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -638,14 +642,23 @@ const start = () => {
           const mesh = new THREE.Object3D();
           mesh.visible = false;
 
-          const mesh1 = new THREE.Line(geometry1, material3);
-          mesh1.rotation.x = -(Math.PI * 0.3);
+          const mesh1 = new THREE.Mesh(geometry1, material2);
           mesh.add(mesh1);
 
-          const barrelMesh = new THREE.Points(barrelGeometry, material4);
-          barrelMesh.position.z = -0.2;
-          mesh1.add(barrelMesh);
-          mesh.barrelMesh = barrelMesh;
+          const mesh2 = new THREE.Mesh(geometry2, material2);
+          mesh.add(mesh2);
+
+          const barrelMesh = new THREE.Line(barrelGeometry, material4);
+          barrelMesh.rotation.x = -(Math.PI * 0.3);
+          barrelMesh.visible = false;
+          mesh.add(barrelMesh);
+
+          const barrelTipMesh = new THREE.Points(barrelGeometry, material4);
+          barrelTipMesh.position.y = -0.005;
+          barrelTipMesh.position.z = -0.2;
+          barrelTipMesh.visible = false;
+          barrelMesh.add(barrelTipMesh);
+          mesh.barrelTipMesh = barrelTipMesh;
 
           const rootMesh = new THREE.Points(rootGeometry, material4);
           rootMesh.visible = false;
