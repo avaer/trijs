@@ -227,9 +227,9 @@ const start = () => {
          controller.weaponMeshesList.push(mesh);
       });
       controller.weapon = null;
+      controller.newWeapon = null;
       controller.droppedWeapon = null;
 
-      // update menu targeting
       controller.update = (oldUpdateFn => {
         return ({positionOffset}) => {
           oldUpdateFn({positionOffset});
@@ -306,21 +306,6 @@ const start = () => {
               
               menuMesh.uiMesh.solidMesh.geometry.setSliceColor(weaponIndex, 0xca2a19);
 
-              const _setWeapon = newWeapon => {
-                if (newWeapon) {
-                  const {weapon: oldWeapon} = controller;
-                  if (oldWeapon) {
-                    const oldWeaponMesh = controller.weaponMeshes[oldWeapon];
-                    oldWeaponMesh.visible = false;
-                    controller.weapon = null;
-                  }
-
-                  const newWeaponMesh = controller.weaponMeshes[newWeapon];
-                  newWeaponMesh.visible = true;
-                  controller.weapon = newWeapon;
-                }
-              };
-
               const weapon = (() => {
                 switch (weaponIndex) {
                   case 1: return 'gun';
@@ -328,17 +313,17 @@ const start = () => {
                   default: return null;
                 }
               })();
-              _setWeapon(weapon);
+              controller.newWeapon = weapon;
             }
-          } /* else {
-            _setPosition(0, 0, 0);
-          } */
+          }
         };
       })(controller.update);
 
       controller.on('Gripped', e => {
         if (controller.droppedWeapon) {
           const droppedWeaponMesh = controller.weaponMeshes[controller.droppedWeapon];
+          droppedWeaponMesh.visible = false;
+
           const {physicsMesh} = droppedWeaponMesh;
           physicsScene.remove(physicsMesh);
 
@@ -365,24 +350,26 @@ const start = () => {
       controller.on('Ungripped', e => {
         if (menuMesh.visible) {
           menuMesh.visible = false;
-        } else {
-          const {weapon} = controller;
-          if (weapon) {
-            const weaponMesh = weaponMeshes[weapon];
-            const {physicsMesh} = weaponMesh;
 
-            physicsMesh.position.x = weaponMesh.position.x;
-            physicsMesh.position.y = weaponMesh.position.y;
-            physicsMesh.position.z = weaponMesh.position.z;
-            physicsMesh.__dirtyPosition = true;
+          const {newWeapon} = controller;
+          if (newWeapon) {
+            const newWeaponMesh = controller.weaponMeshes[newWeapon];
+            newWeaponMesh.visible = true;
 
-            physicsMesh.rotation.x = weaponMesh.rotation.x;
-            physicsMesh.rotation.y = weaponMesh.rotation.y;
-            physicsMesh.rotation.z = weaponMesh.rotation.z;
-            physicsMesh.rotation.w = weaponMesh.rotation.w;
-            physicsMesh.__dirtyRotation = true;
-
+            const {physicsMesh} = newWeaponMesh;
             physicsScene.add(physicsMesh);
+            // physicsMesh.mass = 0;
+
+            controller.weapon = newWeapon;
+            controller.newWeapon = null;
+          }
+        } else {
+          const {weapon: oldWeapon} = controller;
+          if (oldWeapon) {
+            const oldWeaponMesh = weaponMeshes[oldWeapon];
+            const {physicsMesh} = oldWeaponMesh;
+
+            writePhysics(oldWeaponMesh, physicsMesh);
 
             const pose = controller.getPose();
             const linearVelocity = new THREE.Vector3().fromArray(pose.linearVelocity)
@@ -395,8 +382,10 @@ const start = () => {
             angularVelocity.z = -angularVelocity.z;
             physicsMesh.setAngularVelocity(angularVelocity);
 
+            // physicsMesh.mass = 1;
+
             controller.weapon = null;
-            controller.droppedWeapon = weapon;
+            controller.droppedWeapon = oldWeapon;
           }
         }
       });
@@ -883,6 +872,30 @@ const start = () => {
     fixedTimeStep: 1 / 90,
   });
 
+  const writePhysics = (threeMesh, physicsMesh) => {
+    physicsMesh.position.x = threeMesh.position.x;
+    physicsMesh.position.y = threeMesh.position.y;
+    physicsMesh.position.z = threeMesh.position.z;
+    physicsMesh.__dirtyPosition = true;
+
+    physicsMesh.rotation.x = threeMesh.rotation.x;
+    physicsMesh.rotation.y = threeMesh.rotation.y;
+    physicsMesh.rotation.z = threeMesh.rotation.z;
+    physicsMesh.rotation.w = threeMesh.rotation.w;
+    physicsMesh.__dirtyRotation = true;
+  };
+
+  const readPhysics = (physicsMesh, threeMesh) => {
+    threeMesh.position.x = physicsMesh.position.x;
+    threeMesh.position.y = physicsMesh.position.y;
+    threeMesh.position.z = physicsMesh.position.z;
+
+    threeMesh.quaternion.x = physicsMesh.quaternion.x;
+    threeMesh.quaternion.y = physicsMesh.quaternion.y;
+    threeMesh.quaternion.z = physicsMesh.quaternion.z;
+    threeMesh.quaternion.w = physicsMesh.quaternion.w;
+  };
+
   const _updatePhysics = () => {
     boxMesh.position.x = boxPhysicsMesh.position.x;
     boxMesh.position.y = boxPhysicsMesh.position.y;
@@ -893,17 +906,15 @@ const start = () => {
     boxMesh.quaternion.w = boxPhysicsMesh.quaternion.w;
 
     [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
+      if (controller.weapon) {
+        const weaponMesh = controller.weaponMeshes[controller.weapon];
+        const {physicsMesh} = weaponMesh;
+        writePhysics(weaponMesh, physicsMesh);
+      }
       if (controller.droppedWeapon) {
         const droppedWeaponMesh = controller.weaponMeshes[controller.droppedWeapon];
         const {physicsMesh} = droppedWeaponMesh;
-
-        droppedWeaponMesh.position.x = physicsMesh.position.x;
-        droppedWeaponMesh.position.y = physicsMesh.position.y;
-        droppedWeaponMesh.position.z = physicsMesh.position.z;
-        droppedWeaponMesh.quaternion.x = physicsMesh.quaternion.x;
-        droppedWeaponMesh.quaternion.y = physicsMesh.quaternion.y;
-        droppedWeaponMesh.quaternion.z = physicsMesh.quaternion.z;
-        droppedWeaponMesh.quaternion.w = physicsMesh.quaternion.w;
+        readPhysics(physicsMesh, droppedWeaponMesh);
       }
     });
 
