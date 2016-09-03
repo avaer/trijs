@@ -92,6 +92,10 @@ const start = () => {
     // shading: THREE.FlatShading,
     vertexColors: THREE.VertexColors,
   });
+  const material6 = new THREE.MeshLambertMaterial({
+    color: 0xC03030,
+    shading: THREE.FlatShading,
+  }); 
 
   const sphereMesh = (() => {
     const result = new THREE.Object3D();
@@ -198,6 +202,59 @@ const start = () => {
     let shootFrame = null;
     const _makeController = id => {
       const controller = new ViveController(id, controls);
+
+      const geometry1 = new THREE.TorusBufferGeometry(0.04, 0.02, 3, 5, Math.PI * 2);
+      geometry1.applyMatrix(new THREE.Matrix4().makeRotationZ((1 / 20) * (Math.PI * 2)));
+      geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.035, -0.01));
+      geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2) - (Math.PI * 0.3)));
+      geometry1.computeVertexNormals();
+      const mesh1 = new THREE.Mesh(geometry1, material6);
+      controller.add(mesh1);
+
+      const geometry2 = (() => {
+        const positions = geometry1.getAttribute('position').array;
+        const points = (() => {
+          const numPoints = positions.length / 3;
+          const result = Array(numPoints);
+          for (let i = 0; i < numPoints; i++) {
+            result[i] = {
+              x: positions[(i * 3) + 0],
+              y: positions[(i * 3) + 1],
+              z: positions[(i * 3) + 2],
+              index: i,
+            };
+          }
+          return result;
+        })();
+        const filteredPoints = points.filter((e, i) => {
+          for (let j = i - 1; j >= 0; j--) {
+            const e2 = points[j];
+            if (e2.x === e.x && e2.y === e.y && e2.z == e.z) {
+              return false;
+            }
+          }
+          return true;
+        });
+        const sortedZPoints = filteredPoints.sort((a, b) => b.z - a.z);
+        const closest4ZPoints = sortedZPoints.slice(0, 4);
+        const outermost2XPoints = closest4ZPoints.sort((a, b) => Math.abs(b.x) - Math.abs(a.x)).slice(0, 2);
+        outermost2XPoints.forEach(p => {
+          p.x = (Math.abs(p.x) - 0.01) * (p.x >= 0 ? 1 : -1);
+        });
+        const convexPoints = closest4ZPoints.map(({x, y, z}) => new THREE.Vector3(x, y, z)).concat([
+          new THREE.Vector3(-0.017, -0.005, 0.14),
+          new THREE.Vector3(0.017, -0.005, 0.14),
+          new THREE.Vector3(-0.01, -0.026, 0.15),
+          new THREE.Vector3(0.01, -0.026, 0.15),
+          new THREE.Vector3(0, -0.005, 0.18),
+        ]);
+        const convexGeometry = new THREE.ConvexGeometry(convexPoints);
+        const geometry = new THREE.BufferGeometry().fromGeometry(convexGeometry);
+        geometry.computeVertexNormals();
+        return geometry;
+      })();
+      const mesh2 = new THREE.Mesh(geometry2, material6);
+      controller.add(mesh2);
 
       const rootGeometry = new THREE.Geometry();
       rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
