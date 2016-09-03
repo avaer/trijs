@@ -819,8 +819,8 @@ const start = () => {
 
               // update teleport targeting
               (() => {
-                const rootMatrixWorld = getMatrixWorld(controllersMesh.controller1.weaponMeshes.gun.rootMesh);
-                const tipMatrixWorld = getMatrixWorld(controllersMesh.controller1.weaponMeshes.gun.tipMesh);
+                const rootMatrixWorld = getMatrixWorld(controllersMesh.controller1.rootMesh);
+                const tipMatrixWorld = getMatrixWorld(controllersMesh.controller1.tipMesh);
                 const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),
