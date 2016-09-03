@@ -580,9 +580,6 @@ const start = () => {
         geometry3.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.04, 0));
         geometry3.computeVertexNormals();
 
-        /* const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
-        geometry4.computeVertexNormals(); */
-
         const rootGeometry = new THREE.Geometry();
         rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
 
@@ -601,12 +598,6 @@ const start = () => {
 
           const mesh3 = new THREE.Mesh(geometry3, material2);
           mesh.add(mesh3);
-
-          /* const mesh4 = new THREE.Mesh(geometry4, material);
-          mesh4.position.z = -1;
-          mesh4.position.y = -(0.05 * 0.1);
-          mesh4.rotation.x = -(Math.PI / 2) + 0.1;
-          mesh.add(mesh4); */
 
           const rootMesh = new THREE.Points(rootGeometry, material4);
           rootMesh.visible = false;
