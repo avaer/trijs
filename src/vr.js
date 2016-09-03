@@ -198,10 +198,15 @@ const start = () => {
 
       const weaponMeshes = {};
       controller.weaponMeshes = weaponMeshes;
+      const weaponMeshesList = [];
+      controller.weaponMeshesList = weaponMeshesList;
       _makeWeaponMeshes().forEach(weaponMesh => {
          const {name, mesh} = weaponMesh;
-         controller.add(mesh);
+
+         scene.add(mesh);
+
          controller.weaponMeshes[name] = mesh;
+         controller.weaponMeshesList.push(mesh);
       });
       controller.weapon = null;
 
@@ -218,6 +223,22 @@ const start = () => {
             positionArray[8] = z;
             positionAttribute.needsUpdate = true;
           };
+
+          const controllerMatrixWorld = getMatrixWorld(controller);
+          for (let i = 0; i < controller.weaponMeshesList.length; i++) {
+            const weaponMesh = controller.weaponMeshesList[i];
+
+            weaponMesh.position.x = controllerMatrixWorld.position.x;
+            weaponMesh.position.y = controllerMatrixWorld.position.y;
+            weaponMesh.position.z = controllerMatrixWorld.position.z;
+
+            weaponMesh.quaternion.x = controllerMatrixWorld.quaternion.x;
+            weaponMesh.quaternion.y = controllerMatrixWorld.quaternion.y;
+            weaponMesh.quaternion.z = controllerMatrixWorld.quaternion.z;
+            weaponMesh.quaternion.w = controllerMatrixWorld.quaternion.w;
+
+            weaponMesh.updateMatrixWorld();
+          }
 
           if (menuMesh.visible) {
             const rootMatrixWorld = getMatrixWorld(weaponMeshes.sword.rootMesh);
@@ -274,6 +295,7 @@ const start = () => {
 
                 if (weapon) {
                   controller.weaponMeshes[weapon].visible = true;
+
                   controller.weapon = weapon;
                 }
               };
