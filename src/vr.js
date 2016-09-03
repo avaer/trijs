@@ -393,6 +393,13 @@ const start = () => {
     };
 
     const _makeWeaponMeshes = (() => {
+      const weaponPhysicsMaterial = Physijs.createMaterial(
+        material2,
+        1, // friction
+        0.1, // restitution
+      );
+      const weaponPhysicsMass = 1;
+
       const _makeSwordMesh = (() => {
         const geometry1 = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9);
         geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
@@ -445,6 +452,13 @@ const start = () => {
           tipMesh.position.z = -1;
           mesh1.add(tipMesh);
           mesh.tipMesh = tipMesh;
+
+          const physicsMesh = (() => {
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 1);
+            const mesh = new Physijs.BoxMesh(geometry, material, mass);
+            return mesh;
+          })();
+          mesh.physicsMesh = physicsMesh;
 
           return mesh;
         };
@@ -682,24 +696,18 @@ const start = () => {
             boxPhysicsMesh.position.x = 0;
             boxPhysicsMesh.position.y = 3;
             boxPhysicsMesh.position.z = -2;
+            boxPhysicsMesh.__dirtyPosition = true;
 
             boxPhysicsMesh.rotation.x = 0;
             boxPhysicsMesh.rotation.y = 0;
             boxPhysicsMesh.rotation.z = 0;
             boxPhysicsMesh.rotation.w = 0;
-
-            boxPhysicsMesh._physijs.linearVelocity.x = 0;
-            boxPhysicsMesh._physijs.linearVelocity.y = 0;
-            boxPhysicsMesh._physijs.linearVelocity.z = 0;
-
-            boxPhysicsMesh._physijs.angularVelocity.x = 0;
-            boxPhysicsMesh._physijs.angularVelocity.y = 0;
-            boxPhysicsMesh._physijs.angularVelocity.z = 0;
-
-            boxPhysicsMesh.__dirtyPosition = true;
             boxPhysicsMesh.__dirtyRotation = true;
 
-            controllersMesh.controller0.vibrate(0.1, 10);
+            boxPhysicsMesh.setLinearVelocity(0, 0, 0);
+            boxPhysicsMesh.setAngularVelocity(0, 0, 0);
+
+            controllersMesh.controller0.vibrate(0.5, 10);
           });
           controllersMesh.controller1.on('PadUnpressed', e => {
             if (teleportMesh.visible) {
@@ -847,9 +855,6 @@ const start = () => {
     return physicsMesh;
   })();
   physicsScene.add(boxPhysicsMesh);
-
-window.boxMesh = boxMesh; // XXX
-window.boxPhysicsMesh = boxPhysicsMesh;
 
   _recursePhysics();
 };
