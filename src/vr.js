@@ -385,6 +385,17 @@ const start = () => {
 
             physicsScene.add(physicsMesh);
 
+            const pose = controller.getPose();
+            const linearVelocity = new THREE.Vector3().fromArray(pose.linearVelocity)
+            linearVelocity.x = -linearVelocity.x;
+            linearVelocity.z = -linearVelocity.z;
+            physicsMesh.setLinearVelocity(linearVelocity);
+
+            const angularVelocity = new THREE.Vector3().fromArray(pose.angularVelocity);
+            angularVelocity.x = -angularVelocity.x;
+            angularVelocity.z = -angularVelocity.z;
+            physicsMesh.setAngularVelocity(angularVelocity);
+
             controller.weapon = null;
             controller.droppedWeapon = weapon;
           }
@@ -770,8 +781,9 @@ const start = () => {
             boxPhysicsMesh.rotation.w = 0;
             boxPhysicsMesh.__dirtyRotation = true;
 
-            /* boxPhysicsMesh.setLinearVelocity(0, 0, 0); // XXX
-            boxPhysicsMesh.setAngularVelocity(0, 0, 0); */
+            const zeroVector = new THREE.Vector3(0, 0, 0);
+            boxPhysicsMesh.setLinearVelocity(zeroVector);
+            boxPhysicsMesh.setAngularVelocity(zeroVector);
 
             controllersMesh.controller0.vibrate(vibrateIntensity, vibrateTime);
           });

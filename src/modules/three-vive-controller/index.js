@@ -63,14 +63,28 @@ module.exports = function(THREE, packageRoot) {
           }
         }.bind(this)
 
-        this.vibrate = function(intensity, duration) {
+        this.getPose = function() { // XXX added
+          var gamepad = navigator.getGamepads()[controllerId];
+          if (gamepad) {
+            var pose = gamepad.pose;
+            if (pose.position && pose.orientation) {
+              return pose;
+            } else {
+              return null;
+            }
+          } else {
+            return null
+          }
+        }
+
+        this.vibrate = function(intensity, duration) { // XXX added
           var gamepad = navigator.getGamepads()[controllerId];
           if (gamepad && gamepad.haptics && gamepad.haptics.length > 0) {
             gamepad.haptics[0].vibrate(intensity, duration);
           }
         };
 
-        this.update = function(opts) {
+        this.update = function(opts) { // XXX added
             var positionOffset = opts.positionOffset;
 
             var gamepad = navigator.getGamepads()[controllerId];
