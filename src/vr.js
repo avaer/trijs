@@ -344,8 +344,6 @@ const start = () => {
           physicsScene.remove(physicsMesh);
 
           controller.droppedWeapon = null;
-
-          console.log('clear dropped weapon');
         }
 
         if (!controller.weapon) {
@@ -363,15 +361,11 @@ const start = () => {
           menuMesh.quaternion.w = quaternion.w;
 
           menuMesh.visible = true;
-
-          console.log('open menu');
         }
       });
       controller.on('Ungripped', e => {
         if (menuMesh.visible) {
           menuMesh.visible = false;
-
-          console.log('close menu');
         } else {
           const {weapon} = controller;
           if (weapon) {
@@ -393,8 +387,6 @@ const start = () => {
 
             controller.weapon = null;
             controller.droppedWeapon = weapon;
-
-            console.log('drop weapon', weapon);
           }
         }
       });
@@ -758,7 +750,6 @@ const start = () => {
   let display = null;
   navigator.getVRDisplays()
     .then(ds => {
-      console.log(ds);
       display = ds.find(d => d instanceof VRDisplay);
 
       display.requestPresent([{
@@ -874,7 +865,7 @@ const start = () => {
     });
 
   const physicsScene = new Physijs.Scene({
-    fixedTimeStep: 1 / 90, // XXX
+    fixedTimeStep: 1 / 90,
   });
 
   const _updatePhysics = () => {
