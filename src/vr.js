@@ -156,6 +156,16 @@ const start = () => {
     return mesh;
   })();
   scene.add(pointsMesh);
+  const setMenuPointPosition = (() => {
+    const positionAttribute = pointsMesh.geometry.getAttribute('position');
+    const positionArray = positionAttribute.array;
+    return (x, y, z) => {
+      positionArray[6] = x;
+      positionArray[7] = y;
+      positionArray[8] = z;
+      positionAttribute.needsUpdate = true;
+    };
+  })();
 
   const teleportMesh = (() => {
     const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
@@ -234,15 +244,6 @@ const start = () => {
         return ({positionOffset}) => {
           oldUpdateFn({positionOffset});
 
-          const positionAttribute = pointsMesh.geometry.getAttribute('position');
-          const positionArray = positionAttribute.array;
-          const _setPosition = (x, y, z) => {
-            positionArray[6] = x;
-            positionArray[7] = y;
-            positionArray[8] = z;
-            positionAttribute.needsUpdate = true;
-          };
-
           if (controller.weapon) {
             const weaponMesh = controller.weaponMeshes[controller.weapon];
             const controllerMatrixWorld = getMatrixWorld(controller);
@@ -275,7 +276,7 @@ const start = () => {
             const intersectionPoint = menuPlane.intersectLine(controllerLine);
 
             if (intersectionPoint) {
-              _setPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+              setMenuPointPosition(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
 
               const sliceCenters = (() => {
                 const {numSlices, innerRadius} = menuMesh;
@@ -349,8 +350,6 @@ const start = () => {
       });
       controller.on('Ungripped', e => {
         if (menuMesh.visible) {
-          menuMesh.visible = false;
-
           const {newWeapon} = controller;
           if (newWeapon) {
             const newWeaponMesh = controller.weaponMeshes[newWeapon];
@@ -362,6 +361,10 @@ const start = () => {
             controller.weapon = newWeapon;
             controller.newWeapon = null;
           }
+
+          setMenuPointPosition(0, 0, 0);
+
+          menuMesh.visible = false;
         } else {
           const {weapon: oldWeapon} = controller;
           if (oldWeapon) {
@@ -371,14 +374,18 @@ const start = () => {
             writePhysics(oldWeaponMesh, physicsMesh);
 
             const pose = controller.getPose();
+            const standingMatrix = controls.getStandingMatrix();
+            const position = new THREE.Vector3();
+            const quaternion = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            standingMatrix.decompose(position, quaternion, scale);
+
             const linearVelocity = new THREE.Vector3().fromArray(pose.linearVelocity)
-            linearVelocity.x = -linearVelocity.x;
-            linearVelocity.z = -linearVelocity.z;
+              .multiply(scale);
             physicsMesh.setLinearVelocity(linearVelocity);
 
-            const angularVelocity = new THREE.Vector3().fromArray(pose.angularVelocity);
-            angularVelocity.x = -angularVelocity.x;
-            angularVelocity.z = -angularVelocity.z;
+            const angularVelocity = new THREE.Vector3().fromArray(pose.angularVelocity)
+              .multiply(scale);
             physicsMesh.setAngularVelocity(angularVelocity);
 
             controller.weapon = null;
@@ -390,45 +397,30 @@ const start = () => {
         if (controller.weapon === 'sword') {
           const {position, quaternion, scale} = getMatrixWorld(weaponMeshes.sword.tipMesh);
 
-          const positionAttribute = pointsMesh.geometry.getAttribute('position');
-          const positionArray = positionAttribute.array;
-          positionArray[0] = position.x;
-          positionArray[1] = position.y;
-          positionArray[2] = position.z;
-          positionAttribute.needsUpdate = true;
+          setSwordPointPosition(position.x, position.y, position.z);
 
           controller.vibrate(vibrateIntensity, vibrateTime);
         } else if (controller.weapon === 'gun') {
           const positionAttribute = pointsMesh.geometry.getAttribute('position');
           const positionArray = positionAttribute.array;
 
-          const _getPosition = (x, y, z) => {
-            return new THREE.Vector3(
-              positionArray[3],
-              positionArray[4],
-              positionArray[5]
-            );
-          };
-          const _setPosition = (x, y, z) => {
-            positionArray[3] = x;
-            positionArray[4] = y;
-            positionArray[5] = z;
-            positionAttribute.needsUpdate = true;
-          };
-
           const rootMatrixWorld = getMatrixWorld(weaponMeshes.gun.rootMesh);
           const barrelMatrixWorld = getMatrixWorld(weaponMeshes.gun.barrelMesh);
           const ray = barrelMatrixWorld.position.clone().sub(rootMatrixWorld.position);
 
-          _setPosition(barrelMatrixWorld.position.x, barrelMatrixWorld.position.y, barrelMatrixWorld.position.z);
+          setGunPointPosition(
+            barrelMatrixWorld.position.x,
+            barrelMatrixWorld.position.y,
+            barrelMatrixWorld.position.z
+          );
 
           const _recurseBullet = () => {
             if (display) {
               const localShootFrame = shootFrame = display.requestAnimationFrame(() => {
                 if (localShootFrame === shootFrame) {
-                  const oldPosition = _getPosition();
+                  const oldPosition = getGunPointPosition();
                   const speed = 0.5;
-                  _setPosition(
+                  setGunPointPosition(
                     oldPosition.x + (ray.x * speed),
                     oldPosition.y + (ray.y * speed),
                     oldPosition.z + (ray.z * speed)
@@ -738,6 +730,37 @@ const start = () => {
     return result;
   })();
   scene.add(controllersMesh);
+  const setSwordPointPosition = (() => {
+    const positionAttribute = pointsMesh.geometry.getAttribute('position');
+    const positionArray = positionAttribute.array;
+    return (x, y, z) => {
+      positionArray[0] = x;
+      positionArray[1] = y;
+      positionArray[2] = z;
+      positionAttribute.needsUpdate = true;
+    };
+  })();
+  const getGunPointPosition = (() => {
+    const positionAttribute = pointsMesh.geometry.getAttribute('position');
+    const positionArray = positionAttribute.array;
+    return () => {
+      return new THREE.Vector3(
+        positionArray[3],
+        positionArray[4],
+        positionArray[5]
+      );
+    };
+  })();
+  const setGunPointPosition = (() => {
+    const positionAttribute = pointsMesh.geometry.getAttribute('position');
+    const positionArray = positionAttribute.array;
+    return (x, y, z) => {
+      positionArray[3] = x;
+      positionArray[4] = y;
+      positionArray[5] = z;
+      positionAttribute.needsUpdate = true;
+    };
+  })();
 
   function onResize(e) {
     effect.setSize(window.innerWidth, window.innerHeight);
