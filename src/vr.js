@@ -18,7 +18,7 @@ const start = () => {
   const vibrateIntensity = 0.5;
   const vibrateTime = 10;
 
-  function makePyramidGeometry(x, y, z, s) {
+  /* function makePyramidGeometry(x, y, z, s) {
     var geometry = new THREE.Geometry();
 
     // back
@@ -46,7 +46,7 @@ const start = () => {
     geometry.faces.push(new THREE.Face3(9, 10, 11));
 
     return geometry;
-  }
+  } */
   function getMatrixWorld(mesh) {
     const position = new THREE.Vector3();
     const quaternion = new THREE.Quaternion();
@@ -574,11 +574,14 @@ const start = () => {
           0, -0.1, -0.9,
         ]), 3));
 
-        const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 5, 5));
+        const geometry3 = new THREE.BufferGeometry().fromGeometry(new THREE.SphereGeometry(0.1, 3, 3));
+        geometry3.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+        geometry3.applyMatrix(new THREE.Matrix4().makeRotationZ(-(Math.PI / 4) + (Math.PI / 16)));
+        geometry3.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.04, 0));
         geometry3.computeVertexNormals();
 
-        const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
-        geometry4.computeVertexNormals();
+        /* const geometry4 = new THREE.BufferGeometry().fromGeometry(makePyramidGeometry(0, 0, 0, 0.05));
+        geometry4.computeVertexNormals(); */
 
         const rootGeometry = new THREE.Geometry();
         rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -599,11 +602,11 @@ const start = () => {
           const mesh3 = new THREE.Mesh(geometry3, material2);
           mesh.add(mesh3);
 
-          const mesh4 = new THREE.Mesh(geometry4, material);
+          /* const mesh4 = new THREE.Mesh(geometry4, material);
           mesh4.position.z = -1;
           mesh4.position.y = -(0.05 * 0.1);
           mesh4.rotation.x = -(Math.PI / 2) + 0.1;
-          mesh.add(mesh4);
+          mesh.add(mesh4); */
 
           const rootMesh = new THREE.Points(rootGeometry, material4);
           rootMesh.visible = false;
