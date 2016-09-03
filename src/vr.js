@@ -201,7 +201,6 @@ const start = () => {
       rootMesh.visible = false;
       controller.add(rootMesh);
       controller.rootMesh = rootMesh;
-
           
       const tipGeometry = new THREE.Geometry();
       tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
@@ -516,11 +515,13 @@ const start = () => {
           mesh.add(mesh4);
 
           const rootMesh = new THREE.Points(rootGeometry, material4);
+          rootMesh.visible = false;
           mesh.add(rootMesh);
           mesh.rootMesh = rootMesh;
 
           const tipMesh = new THREE.Points(tipGeometry, material4);
           tipMesh.position.z = -1;
+          tipMesh.visible = false;
           mesh1.add(tipMesh);
           mesh.tipMesh = tipMesh;
 
@@ -562,11 +563,13 @@ const start = () => {
           mesh.barrelMesh = barrelMesh;
 
           const rootMesh = new THREE.Points(rootGeometry, material4);
+          rootMesh.visible = false;
           mesh.add(rootMesh);
           mesh.rootMesh = rootMesh;
 
           const tipMesh = new THREE.Points(tipGeometry, material4);
           tipMesh.position.z = -1;
+          tipMesh.visible = false;
           mesh.add(tipMesh);
           mesh.tipMesh = tipMesh;
 
