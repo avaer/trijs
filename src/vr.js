@@ -21,6 +21,9 @@ Stats.Panel=function(h,k,l){var c=Infinity,g=0,e=Math.round,a=e(window.devicePix
 v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,r,m);b.fillStyle=k;b.fillText(e(f)+" "+h+" ("+e(c)+"-"+e(g)+")",t,u);b.drawImage(q,d+a,m,n-a,p,d,m,n-a,p);b.fillRect(d+n-a,m,a,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d+n-a,m,a,e((1-f/v)*p))}}};
 
 const start = () => {
+  const vibrateIntensity = 0.5;
+  const vibrateTime = 10;
+
   function makePyramidGeometry(x, y, z, s) {
     var geometry = new THREE.Geometry();
 
@@ -192,6 +195,22 @@ const start = () => {
     const _makeController = id => {
       const controller = new ViveController(id, controls);
 
+      const rootGeometry = new THREE.Geometry();
+      rootGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+      const rootMesh = new THREE.Points(rootGeometry, material4);
+      rootMesh.visible = false;
+      controller.add(rootMesh);
+      controller.rootMesh = rootMesh;
+
+          
+      const tipGeometry = new THREE.Geometry();
+      tipGeometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+      const tipMesh = new THREE.Points(tipGeometry, material4);
+      tipMesh.position.z = -1;
+      tipMesh.visible = false;
+      controller.add(tipMesh);
+      controller.tipMesh = tipMesh;
+
       const menuMesh = _makeMenuMesh();
       controller.menuMesh = menuMesh;
       scene.add(menuMesh);
@@ -209,11 +228,12 @@ const start = () => {
          controller.weaponMeshesList.push(mesh);
       });
       controller.weapon = null;
+      controller.droppedWeapon = null;
 
       // update menu targeting
-      controller.update = (oldUpdate => {
+      controller.update = (oldUpdateFn => {
         return ({positionOffset}) => {
-          oldUpdate({positionOffset});
+          oldUpdateFn({positionOffset});
 
           const positionAttribute = pointsMesh.geometry.getAttribute('position');
           const positionArray = positionAttribute.array;
@@ -224,9 +244,9 @@ const start = () => {
             positionAttribute.needsUpdate = true;
           };
 
-          const controllerMatrixWorld = getMatrixWorld(controller);
-          for (let i = 0; i < controller.weaponMeshesList.length; i++) {
-            const weaponMesh = controller.weaponMeshesList[i];
+          if (controller.weapon) {
+            const weaponMesh = controller.weaponMeshes[controller.weapon];
+            const controllerMatrixWorld = getMatrixWorld(controller);
 
             weaponMesh.position.x = controllerMatrixWorld.position.x;
             weaponMesh.position.y = controllerMatrixWorld.position.y;
@@ -237,12 +257,12 @@ const start = () => {
             weaponMesh.quaternion.z = controllerMatrixWorld.quaternion.z;
             weaponMesh.quaternion.w = controllerMatrixWorld.quaternion.w;
 
-            weaponMesh.updateMatrixWorld();
+            weaponMesh.updateMatrixWorld(); 
           }
 
           if (menuMesh.visible) {
-            const rootMatrixWorld = getMatrixWorld(weaponMeshes.sword.rootMesh);
-            const tipMatrixWorld = getMatrixWorld(weaponMeshes.sword.tipMesh);
+            const rootMatrixWorld = getMatrixWorld(controller.rootMesh);
+            const tipMatrixWorld = getMatrixWorld(controller.tipMesh);
             const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
             const controllerLine = new THREE.Line3(
               rootMatrixWorld.position.clone(),
@@ -287,16 +307,18 @@ const start = () => {
               
               menuMesh.uiMesh.solidMesh.geometry.setSliceColor(weaponIndex, 0xca2a19);
 
-              const _setWeapon = weapon => {
-                if (controller.weapon) {
-                  controller.weaponMeshes[controller.weapon].visible = false;
-                  controller.weapon = null;
-                }
+              const _setWeapon = newWeapon => {
+                if (newWeapon) {
+                  const {weapon: oldWeapon} = controller;
+                  if (oldWeapon) {
+                    const oldWeaponMesh = controller.weaponMeshes[oldWeapon];
+                    oldWeaponMesh.visible = false;
+                    controller.weapon = null;
+                  }
 
-                if (weapon) {
-                  controller.weaponMeshes[weapon].visible = true;
-
-                  controller.weapon = weapon;
+                  const newWeaponMesh = controller.weaponMeshes[newWeapon];
+                  newWeaponMesh.visible = true;
+                  controller.weapon = newWeapon;
                 }
               };
 
@@ -316,23 +338,65 @@ const start = () => {
       })(controller.update);
 
       controller.on('Gripped', e => {
-        const position = new THREE.Vector3();
-        const quaternion = new THREE.Quaternion();
-        const scale = new THREE.Vector3();
-        camera.matrix.decompose(position, quaternion, scale);
+        if (controller.droppedWeapon) {
+          const droppedWeaponMesh = controller.weaponMeshes[controller.droppedWeapon];
+          const {physicsMesh} = droppedWeaponMesh;
+          physicsScene.remove(physicsMesh);
 
-        menuMesh.position.x = position.x;
-        menuMesh.position.y = position.y;
-        menuMesh.position.z = position.z;
-        menuMesh.quaternion.x = quaternion.x;
-        menuMesh.quaternion.y = quaternion.y;
-        menuMesh.quaternion.z = quaternion.z;
-        menuMesh.quaternion.w = quaternion.w;
+          controller.droppedWeapon = null;
 
-        menuMesh.visible = true;
+          console.log('clear dropped weapon');
+        }
+
+        if (!controller.weapon) {
+          const position = new THREE.Vector3();
+          const quaternion = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          camera.matrix.decompose(position, quaternion, scale);
+
+          menuMesh.position.x = position.x;
+          menuMesh.position.y = position.y;
+          menuMesh.position.z = position.z;
+          menuMesh.quaternion.x = quaternion.x;
+          menuMesh.quaternion.y = quaternion.y;
+          menuMesh.quaternion.z = quaternion.z;
+          menuMesh.quaternion.w = quaternion.w;
+
+          menuMesh.visible = true;
+
+          console.log('open menu');
+        }
       });
       controller.on('Ungripped', e => {
-        menuMesh.visible = false;
+        if (menuMesh.visible) {
+          menuMesh.visible = false;
+
+          console.log('close menu');
+        } else {
+          const {weapon} = controller;
+          if (weapon) {
+            const weaponMesh = weaponMeshes[weapon];
+            const {physicsMesh} = weaponMesh;
+
+            physicsMesh.position.x = weaponMesh.position.x;
+            physicsMesh.position.y = weaponMesh.position.y;
+            physicsMesh.position.z = weaponMesh.position.z;
+            physicsMesh.__dirtyPosition = true;
+
+            physicsMesh.rotation.x = weaponMesh.rotation.x;
+            physicsMesh.rotation.y = weaponMesh.rotation.y;
+            physicsMesh.rotation.z = weaponMesh.rotation.z;
+            physicsMesh.rotation.w = weaponMesh.rotation.w;
+            physicsMesh.__dirtyRotation = true;
+
+            physicsScene.add(physicsMesh);
+
+            controller.weapon = null;
+            controller.droppedWeapon = weapon;
+
+            console.log('drop weapon', weapon);
+          }
+        }
       });
       controller.on('TriggerClicked', e => {
         if (controller.weapon === 'sword') {
@@ -344,6 +408,8 @@ const start = () => {
           positionArray[1] = position.y;
           positionArray[2] = position.z;
           positionAttribute.needsUpdate = true;
+
+          controller.vibrate(vibrateIntensity, vibrateTime);
         } else if (controller.weapon === 'gun') {
           const positionAttribute = pointsMesh.geometry.getAttribute('position');
           const positionArray = positionAttribute.array;
@@ -386,6 +452,8 @@ const start = () => {
             }
           };
           _recurseBullet();
+
+          controller.vibrate(vibrateIntensity, vibrateTime);
         }
       });
 
@@ -455,7 +523,7 @@ const start = () => {
 
           const physicsMesh = (() => {
             const geometry = new THREE.BoxGeometry(0.1, 0.1, 1);
-            const mesh = new Physijs.BoxMesh(geometry, material, mass);
+            const mesh = new Physijs.BoxMesh(geometry, weaponPhysicsMaterial, weaponPhysicsMass);
             return mesh;
           })();
           mesh.physicsMesh = physicsMesh;
@@ -498,6 +566,13 @@ const start = () => {
           tipMesh.position.z = -1;
           mesh.add(tipMesh);
           mesh.tipMesh = tipMesh;
+
+          const physicsMesh = (() => {
+            const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const mesh = new Physijs.BoxMesh(geometry, weaponPhysicsMaterial, weaponPhysicsMass);
+            return mesh;
+          })();
+          mesh.physicsMesh = physicsMesh;
 
           return mesh;
         }
@@ -704,10 +779,10 @@ const start = () => {
             boxPhysicsMesh.rotation.w = 0;
             boxPhysicsMesh.__dirtyRotation = true;
 
-            boxPhysicsMesh.setLinearVelocity(0, 0, 0);
-            boxPhysicsMesh.setAngularVelocity(0, 0, 0);
+            /* boxPhysicsMesh.setLinearVelocity(0, 0, 0); // XXX
+            boxPhysicsMesh.setAngularVelocity(0, 0, 0); */
 
-            controllersMesh.controller0.vibrate(0.5, 10);
+            controllersMesh.controller0.vibrate(vibrateIntensity, vibrateTime);
           });
           controllersMesh.controller1.on('PadUnpressed', e => {
             if (teleportMesh.visible) {
@@ -799,27 +874,36 @@ const start = () => {
     });
 
   const physicsScene = new Physijs.Scene({
-    // fixedTimeStep: 1 / 60,
     fixedTimeStep: 1 / 90, // XXX
   });
-  // physicsScene.setGravity(0, -10, 0);
 
   const _updatePhysics = () => {
-// console.log('on update');
-
     boxMesh.position.x = boxPhysicsMesh.position.x;
     boxMesh.position.y = boxPhysicsMesh.position.y;
     boxMesh.position.z = boxPhysicsMesh.position.z;
-
     boxMesh.quaternion.x = boxPhysicsMesh.quaternion.x;
     boxMesh.quaternion.y = boxPhysicsMesh.quaternion.y;
     boxMesh.quaternion.z = boxPhysicsMesh.quaternion.z;
     boxMesh.quaternion.w = boxPhysicsMesh.quaternion.w;
 
+    [ controllersMesh.controller0, controllersMesh.controller1 ].forEach(controller => {
+      if (controller.droppedWeapon) {
+        const droppedWeaponMesh = controller.weaponMeshes[controller.droppedWeapon];
+        const {physicsMesh} = droppedWeaponMesh;
+
+        droppedWeaponMesh.position.x = physicsMesh.position.x;
+        droppedWeaponMesh.position.y = physicsMesh.position.y;
+        droppedWeaponMesh.position.z = physicsMesh.position.z;
+        droppedWeaponMesh.quaternion.x = physicsMesh.quaternion.x;
+        droppedWeaponMesh.quaternion.y = physicsMesh.quaternion.y;
+        droppedWeaponMesh.quaternion.z = physicsMesh.quaternion.z;
+        droppedWeaponMesh.quaternion.w = physicsMesh.quaternion.w;
+      }
+    });
+
     _recursePhysics();
   };
   const _recursePhysics = () => {
-// console.log('simulate');
     physicsScene.simulate();
   };
   physicsScene.addEventListener('update', _updatePhysics);
