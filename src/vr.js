@@ -358,7 +358,6 @@ const start = () => {
 
             const {physicsMesh} = newWeaponMesh;
             physicsScene.add(physicsMesh);
-            // physicsMesh.mass = 0;
 
             controller.weapon = newWeapon;
             controller.newWeapon = null;
@@ -381,8 +380,6 @@ const start = () => {
             angularVelocity.x = -angularVelocity.x;
             angularVelocity.z = -angularVelocity.z;
             physicsMesh.setAngularVelocity(angularVelocity);
-
-            // physicsMesh.mass = 1;
 
             controller.weapon = null;
             controller.droppedWeapon = oldWeapon;
